@@ -1,0 +1,7 @@
+playwright
+groq
+anthropic
+python-dotenv
+beautifulsoup4
+requests
+lxml

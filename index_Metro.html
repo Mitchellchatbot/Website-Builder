@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metro Atlanta Detox | Confidential Outpatient Drug & Alcohol Detox</title>
+  <meta name="description" content="Metro Atlanta Detox offers confidential, medically-supervised outpatient detox programs for alcohol and drug addiction. Serving DeKalb, Cobb, Clayton, Cherokee, and Bartow counties. Call +1-888-753-3869 for immediate help.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a3a5c;
+      --primary-dark: #0f2740;
+      --accent: #2d9a8c;
+      --accent-light: #3cb4a4;
+      --pale-tint: #f4f8fb;
+      --text: #2c3e50;
+      --text-muted: #5a6c7d;
+      --white: #ffffff;
+      --border-light: #e8eef3;
+      --shadow-soft: 0 4px 24px rgba(26, 58, 92, 0.08);
+      --shadow-medium: 0 8px 32px rgba(26, 58, 92, 0.12);
+      --radius: 16px;
+      --radius-pill: 50px;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-weight: 400;
+      font-size: clamp(15px, 1.6vw, 17px);
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--white);
+      padding-bottom: 80px;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      color: var(--primary-dark);
+    }
+
+    h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      color: var(--primary-dark);
+    }
+
+    h3 {
+      font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+    }
+
+    p {
+      color: var(--text-muted);
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+      transition: color 0.3s ease;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 28px;
+      border-radius: var(--radius-pill);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--white);
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-light);
+      border-color: var(--accent-light);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(45, 154, 140, 0.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-ghost:hover {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .btn-white-ghost {
+      background: transparent;
+      color: var(--white);
+      border-color: var(--white);
+    }
+
+    .btn-white-ghost:hover {
+      background: var(--white);
+      color: var(--primary);
+    }
+
+    .btn-nav {
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ── Scroll animation base states ── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .fade-in {
+      opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+    .slide-left {
+      opacity: 0;
+      transform: translateX(-40px);
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .slide-right {
+      opacity: 0;
+      transform: translateX(40px);
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .scale-in {
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .animated {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    /* Stagger delays */
+    .stagger-children > *:nth-child(1) { transition-delay: 0s; }
+    .stagger-children > *:nth-child(2) { transition-delay: 0.1s; }
+    .stagger-children > *:nth-child(3) { transition-delay: 0.2s; }
+    .stagger-children > *:nth-child(4) { transition-delay: 0.3s; }
+    .stagger-children > *:nth-child(5) { transition-delay: 0.4s; }
+    /* Counter */
+    .count-up { display: inline-block; }
+    /* Hero load animations */
+    @keyframes heroFadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero-animate   { animation: heroFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .hero-animate-1 { animation-delay: 0.1s; }
+    .hero-animate-2 { animation-delay: 0.25s; }
+    .hero-animate-3 { animation-delay: 0.4s; }
+    .hero-animate-4 { animation-delay: 0.55s; }
+    .hero-animate-5 { animation-delay: 0.7s; }
+    /* Card hover — includes opacity so it doesn't override .fade-up */
+    .card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease,
+                  opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+    }
+    /* Step number pop */
+    @keyframes stepPop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+    .step-num.animated {
+      animation: stepPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    /* Section label underline draw */
+    .section-label {
+      position: relative;
+      display: inline-block;
+    }
+    .section-label::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 0;
+      height: 2px; width: 0;
+      background: var(--accent);
+      transition: width 0.6s ease 0.3s;
+    }
+    .section-label.animated::after { width: 100%; }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      z-index: 1000;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo {
+      height: 44px;
+      width: auto;
+    }
+
+    .nav-brand-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--text);
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-ctas {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    .mobile-menu-btn svg {
+      width: 28px;
+      height: 28px;
+      color: var(--primary);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 140px 0 100px;
+      background: linear-gradient(135deg, var(--pale-tint) 0%, var(--white) 100%);
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .hero-left {
+      max-width: 600px;
+    }
+
+    .location-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--white);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .location-pill svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent);
+    }
+
+    .hero h1 {
+      margin-bottom: 24px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+      line-height: 1.8;
+      margin-bottom: 32px;
+      color: var(--text-muted);
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .trust-badges {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .trust-badge svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+    }
+
+    .trust-badge span {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Hero Form Card */
+    .hero-right {
+      width: 100%;
+    }
+
+    .verify-card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: var(--shadow-medium);
+      border: 1px solid var(--border-light);
+      width: 100%;
+    }
+
+    .verify-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: var(--primary-dark);
+    }
+
+    .verify-card .card-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-row input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+      width: 100%;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(45, 154, 140, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #9ca3af;
+    }
+
+    .verify-card .btn {
+      width: 100%;
+      padding: 16px 28px;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
+    .form-disclaimer {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .form-disclaimer svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: var(--accent);
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      background: var(--primary-dark);
+      padding: 50px 0 60px;
+      margin-bottom: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      text-align: center;
+    }
+
+    .stat-item {
+      color: var(--white);
+    }
+
+    .stat-number {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      color: var(--accent-light);
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.8);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Section Styles */
+    section {
+      padding: 100px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 {
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 1.1rem;
+    }
+
+    /* Services Section */
+    .services {
+      background: var(--pale-tint);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-light);
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .card-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--white);
+    }
+
+    .card h3 {
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+    }
+
+    .card p {
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* Admissions Help Bar */
+    .admissions-bar {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-top: 40px;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-light);
+    }
+
+    .admissions-bar p {
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .admissions-bar-ctas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* How It Works */
+    .process {
+      background: var(--white);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+
+    .step-card {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-num {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 auto 24px;
+      opacity: 0;
+    }
+
+    .step-card h3 {
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+    }
+
+    .step-card p {
+      font-size: 15px;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* Inline Action CTA */
+    .inline-cta {
+      background: var(--pale-tint);
+      padding: 80px 0;
+      text-align: center;
+    }
+
+    .inline-cta-label {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .inline-cta .btn {
+      padding: 18px 40px;
+      font-size: 17px;
+    }
+
+    /* Why Us Section */
+    .why-us {
+      background: var(--white);
+    }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .why-image {
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-medium);
+    }
+
+    .why-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .why-content h2 {
+      margin-bottom: 24px;
+    }
+
+    .why-content > p {
+      margin-bottom: 32px;
+      font-size: 1.05rem;
+    }
+
+    .checklist {
+      list-style: none;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .checklist li svg {
+      width: 24px;
+      height: 24px;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* Reviews Section */
+    .reviews {
+      background: var(--pale-tint);
+    }
+
+    .review-card {
+      padding: 32px;
+    }
+
+    .review-card .stars {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .review-card .stars svg {
+      width: 20px;
+      height: 20px;
+      color: #f59e0b;
+      fill: #f59e0b;
+    }
+
+    .review-card blockquote {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .review-author {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .review-author span {
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .source-badge {
+      font-size: 12px;
+      padding: 4px 12px;
+      background: var(--pale-tint);
+      border-radius: var(--radius-pill);
+      color: var(--text-muted);
+    }
+
+    /* Accreditations */
+    .accreditations {
+      background: var(--white);
+    }
+
+    .seal-grid {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .seal-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .seal-card img {
+      max-height: 100px;
+      width: auto;
+      filter: grayscale(0);
+      transition: filter 0.3s ease;
+    }
+
+    /* CTA Banner */
+    .cta-banner {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      padding: 100px 0;
+      text-align: center;
+    }
+
+    .cta-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-pill);
+      margin-bottom: 32px;
+    }
+
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.2); }
+    }
+
+    .cta-status-pill span {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--white);
+    }
+
+    .cta-banner h2 {
+      color: var(--white);
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      margin-bottom: 20px;
+    }
+
+    .cta-banner h2 em {
+      color: var(--accent-light);
+      font-style: italic;
+    }
+
+    .cta-banner-sub {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+
+    .cta-banner-btns {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--primary-dark);
+      padding: 80px 0 40px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-brand .nav-brand {
+      margin-bottom: 20px;
+    }
+
+    .footer-brand .nav-brand-text {
+      color: var(--white);
+    }
+
+    .footer-brand p {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .footer-seals {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-seals img {
+      height: 60px;
+      width: auto;
+    }
+
+    .footer-col h4 {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--white);
+      margin-bottom: 24px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+      transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent-light);
+    }
+
+    .footer-contact-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+    }
+
+    .footer-contact-item svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent-light);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .footer-contact-item a {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .footer-contact-item a:hover {
+      color: var(--accent-light);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-bottom p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .social-links a {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .social-links a:hover {
+      background: var(--accent);
+    }
+
+    .social-links svg {
+      width: 20px;
+      height: 20px;
+      color: var(--white);
+    }
+
+    /* Sticky Bottom Bar */
+    .sticky-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--primary);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      z-index: 999;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .sticky-bar-text {
+      color: var(--white);
+      font-weight: 500;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sticky-bar-text svg {
+      width: 18px;
+      height: 18px;
+      color: var(--accent-light);
+    }
+
+    .sticky-bar .btn {
+      padding: 12px 24px;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .hero-left {
+        max-width: 100%;
+        text-align: center;
+      }
+
+      .hero-ctas {
+        justify-content: center;
+      }
+
+      .trust-badges {
+        justify-content: center;
+      }
+
+      .hero-right {
+        max-width: 480px;
+        margin: 0 auto;
+      }
+
+      .why-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .why-image {
+        order: -1;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      section {
+        padding: 60px 0;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .nav-ctas {
+        display: none;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+      }
+
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .sticky-bar {
+        gap: 12px;
+        padding: 0 16px;
+      }
+
+      .sticky-bar-text {
+        display: none;
+      }
+
+      .sticky-bar .btn {
+        flex: 1;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .form-row input {
+        flex: none;
+      }
+
+      .form-row .form-group {
+        margin-bottom: 16px;
+      }
+
+      .admissions-bar-ctas {
+        flex-direction: column;
+      }
+
+      .admissions-bar-ctas .btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero {
+        padding: 120px 0 60px;
+      }
+
+      .verify-card {
+        padding: 24px;
+      }
+
+      .cta-banner-btns {
+        flex-direction: column;
+      }
+
+      .cta-banner-btns .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="images/image_001.svg" alt="Metro Atlanta Detox Logo" class="nav-logo">
+        <span class="nav-brand-text">Metro Atlanta Detox</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#process">How It Works</a></li>
+        <li><a href="#why-us">Why Us</a></li>
+        <li><a href="#reviews">Reviews</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <div class="nav-ctas">
+        <a href="#verify" class="btn btn-ghost btn-nav">Verify Insurance</a>
+        <a href="tel:+18887533869" class="btn btn-primary btn-nav">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+          </svg>
+          (888) 753-3869
+        </a>
+      </div>
+      <button class="mobile-menu-btn" aria-label="Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero" id="verify">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-left">
+          <div class="location-pill hero-animate hero-animate-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Serving Metro Atlanta: DeKalb, Cobb, Clayton, Cherokee & Bartow Counties
+          </div>
+          <h1 class="hero-animate hero-animate-2">
+            Reclaim Your Life,<br>
+            <em>Starting Today.</em>
+          </h1>
+          <p class="hero-sub hero-animate hero-animate-3">
+            Metro Atlanta Detox provides confidential, medically supervised outpatient detox programs that let you begin recovery while maintaining your daily responsibilities. Compassionate care from day one, personalized treatment plans, and insurance verification assistance to start your journey immediately.
+          </p>
+          <div class="hero-ctas hero-animate hero-animate-4">
+            <a href="tel:+18887533869" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
+              Call (888) 753-3869
+            </a>
+            <a href="#services" class="btn btn-ghost">Explore Programs</a>
+          </div>
+          <div class="trust-badges hero-animate hero-animate-4">
+            <div class="trust-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              <span>100% Confidential</span>
+            </div>
+            <div class="trust-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Same Day Response</span>
+            </div>
+            <div class="trust-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+              </svg>
+              <span>BBB A+ Rated</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-right hero-animate hero-animate-5">
+          <div class="verify-card">
+            <h3>Get Help Today</h3>
+            <p class="card-subtitle">Take the first step. All inquiries are completely confidential.</p>
+            <form>
+              <div class="form-row">
+                <div class="form-group">
+                  <input type="text" placeholder="First Name" required>
+                </div>
+                <div class="form-group">
+                  <input type="text" placeholder="Last Name" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <input type="tel" placeholder="Phone Number" required>
+              </div>
+              <div class="form-group">
+                <input type="email" placeholder="Email Address" required>
+              </div>
+              <div class="form-group">
+                <input type="text" placeholder="Insurance Provider (Aetna, BCBS, Cigna...)">
+              </div>
+              <div class="form-group">
+                <input type="text" placeholder="Policy Number (ID# 123456789)">
+              </div>
+              <button type="submit" class="btn btn-primary">Request Confidential Callback</button>
+            </form>
+            <div class="form-disclaimer">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+              </svg>
+              <span>Your info is encrypted and HIPAA compliant. Verification will not affect your premium or credit.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <section class="stats-bar">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item fade-up">
+          <div class="stat-number"><span class="count-up" data-target="5000" data-suffix="+">0</span></div>
+          <div class="stat-label">Lives Changed</div>
+        </div>
+        <div class="stat-item fade-up">
+          <div class="stat-number"><span class="count-up" data-target="98" data-suffix="%">0</span></div>
+          <div class="stat-label">Satisfaction Rate</div>
+        </div>
+        <div class="stat-item fade-up">
+          <div class="stat-number"><span class="count-up" data-target="24" data-suffix="/7">0</span></div>
+          <div class="stat-label">Support Available</div>
+        </div>
+        <div class="stat-item fade-up">
+          <div class="stat-number">A+</div>
+          <div class="stat-label">BBB Rating</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services Section -->
+  <section class="services" id="services">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Our Programs</span>
+        <h2 class="fade-up">Comprehensive Detox Services</h2>
+        <p class="fade-up">Medically supervised outpatient detox programs tailored to your unique needs, covering the full spectrum of substance dependencies.</p>
+      </div>
+      <div class="cards-grid stagger-children">
+        <div class="card fade-up">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+            </svg>
+          </div>
+          <h3>Alcohol Detox</h3>
+          <p>Safe, medically monitored alcohol withdrawal management with 24/7 support to minimize discomfort and health risks during your recovery journey.</p>
+        </div>
+        <div class="card fade-up">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <h3>Opioid & Fentanyl Detox</h3>
+          <p>Specialized protocols for opioid and fentanyl dependence, including medication assisted treatment to ease withdrawal and prevent relapse.</p>
+        </div>
+        <div class="card fade-up">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+            </svg>
+          </div>
+          <h3>Benzodiazepine Detox</h3>
+          <p>Carefully structured tapering programs for benzodiazepine withdrawal, prioritizing patient safety and comfort throughout the process.</p>
+        </div>
+        <div class="card fade-up">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <h3>Stimulant Detox</h3>
+          <p>Comprehensive care for cocaine and methamphetamine dependencies with behavioral support and medical monitoring for sustainable recovery.</p>
+        </div>
+      </div>
+      <div class="admissions-bar fade-up">
+        <p>Do not see what you are looking for? Our admissions team can help.</p>
+        <div class="admissions-bar-ctas">
+          <a href="#services" class="btn btn-primary">Explore All Programs</a>
+          <a href="tel:+18887533869" class="btn btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
+            (888) 753-3869
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="process" id="process">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">How It Works</span>
+        <h2 class="fade-up">Your Path to Recovery</h2>
+        <p class="fade-up">A simple, supportive process designed to get you the help you need without unnecessary barriers.</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card fade-up" style="transition-delay: 0s;">
+          <div class="step-num">1</div>
+          <h3>Reach Out for Support</h3>
+          <p>Call our confidential helpline or submit the form. Our compassionate team will listen and help you determine if treatment is right for you.</p>
+        </div>
+        <div class="step-card fade-up" style="transition-delay: 0.1s;">
+          <div class="step-num">2</div>
+          <h3>Verify Your Coverage</h3>
+          <p>We work with most insurance plans. Our team handles verification and helps you understand your benefits and financial options.</p>
+        </div>
+        <div class="step-card fade-up" style="transition-delay: 0.2s;">
+          <div class="step-num">3</div>
+          <h3>Begin Your Journey</h3>
+          <p>Check in at our center and start your personalized detox plan. With day one treatment, you will feel supported from the very beginning.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Inline Action CTA -->
+  <section class="inline-cta">
+    <div class="container">
+      <p class="inline-cta-label fade-up">Ready when you are.</p>
+      <a href="tel:+18887533869" class="btn btn-primary fade-up">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+        Start Step One Now
+      </a>
+    </div>
+  </section>
+
+  <!-- Why Us Section -->
+  <section class="why-us" id="why-us">
+    <div class="container">
+      <div class="why-grid">
+        <div class="why-image slide-left">
+          <img src="images/image_008.jpg" alt="Compassionate group therapy session at Metro Atlanta Detox">
+        </div>
+        <div class="why-content slide-right">
+          <span class="section-label">Why Choose Us</span>
+          <h2>Compassionate Care That Fits Your Life</h2>
+          <p>Our outpatient approach means you can begin recovery while maintaining work, family, and daily responsibilities. With personalized treatment plans and medically supervised care, you are never alone on your journey.</p>
+          <ul class="checklist">
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Medically supervised detox with 24/7 clinical support</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Individualized treatment plans tailored to your needs</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Most insurance plans accepted with verification assistance</span>
+            </li>
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Discreet, confidential care for all patients</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reviews Section -->
+  <section class="reviews" id="reviews">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Patient Stories</span>
+        <h2 class="fade-up">Real Recovery, Real Results</h2>
+        <p class="fade-up">Hear from those who have taken the first step with Metro Atlanta Detox.</p>
+      </div>
+      <div class="cards-grid stagger-children" style="max-width: 800px; margin: 0 auto;">
+        <div class="card review-card fade-up">
+          <div class="stars">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </div>
+          <blockquote>"Overall great experience. I think that having patients hit the ground from Day One is awesome, the staff were incredibly friendly and polite, and the group sessions were very informative and well explained."</blockquote>
+          <div class="review-author">
+            <span>Verified Patient</span>
+            <span class="source-badge">Website</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Accreditations Section -->
+  <section class="accreditations">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Trusted & Accredited</span>
+        <h2 class="fade-up">Recognized for Excellence</h2>
+        <p class="fade-up">Our certifications and partnerships reflect our commitment to the highest standards of care.</p>
+      </div>
+      <div class="seal-grid stagger-children">
+        <div class="seal-card scale-in">
+          <img src="images/image_013.webp" alt="The Joint Commission National Quality Approval">
+        </div>
+        <div class="seal-card scale-in">
+          <img src="images/image_011.png" alt="LegitScript Certified">
+        </div>
+        <div class="seal-card scale-in">
+          <img src="images/image_002.webp" alt="United Healthcare">
+        </div>
+        <div class="seal-card scale-in">
+          <img src="images/image_005.webp" alt="BlueCross BlueShield">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="cta-banner">
+    <div class="container">
+      <div class="cta-status-pill fade-up">
+        <div class="pulse-dot"></div>
+        <span>Help Is Available Right Now</span>
+      </div>
+      <h2 class="fade-up">You do not have to wait <em>another day.</em></h2>
+      <p class="cta-banner-sub fade-up">Our team is available around the clock. Every call is confidential, judgment free, and could be the start of a new chapter in your life.</p>
+      <div class="cta-banner-btns fade-up">
+        <a href="tel:+18887533869" class="btn btn-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+          </svg>
+          Call (888) 753-3869
+        </a>
+        <a href="#verify" class="btn btn-white-ghost">Verify Insurance Online</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer id="contact">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand fade-up">
+          <a href="#" class="nav-brand">
+            <img src="images/image_001.svg" alt="Metro Atlanta Detox Logo" class="nav-logo">
+            <span class="nav-brand-text">Metro Atlanta Detox</span>
+          </a>
+          <p>Providing confidential, medically supervised outpatient detox programs throughout Metro Atlanta. Your recovery starts here, with compassion and expertise every step of the way.</p>
+          <div class="footer-seals">
+            <img src="images/image_011.png" alt="LegitScript Certified">
+            <img src="images/image_013.webp" alt="Joint Commission Gold Seal">
+          </div>
+        </div>
+        <div class="footer-col fade-up">
+          <h4>Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="#services">Our Services</a></li>
+            <li><a href="#process">How It Works</a></li>
+            <li><a href="#why-us">Why Choose Us</a></li>
+            <li><a href="#reviews">Patient Reviews</a></li>
+            <li><a href="#verify">Verify Insurance</a></li>
+          </ul>
+        </div>
+        <div class="footer-col fade-up">
+          <h4>Contact Us</h4>
+          <div class="footer-contact-item">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
+            <a href="tel:+18887533869">(888) 753-3869</a>
+          </div>
+          <div class="footer-contact-item">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <a href="mailto:helpme@metroatlantadetox.com">helpme@metroatlantadetox.com</a>
+          </div>
+          <div class="footer-contact-item">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span>Serving DeKalb, Cobb, Clayton, Cherokee & Bartow Counties</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 Metro Atlanta Detox. All rights reserved.</p>
+        <div class="social-links">
+          <a href="https://www.instagram.com/metroatlantadetox" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </a>
+          <a href="https://www.facebook.com/profile.php?id=61575033837860" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Sticky Bottom Bar -->
+  <div class="sticky-bar">
+    <div class="sticky-bar-text">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Help is available 24/7
+    </div>
+    <a href="tel:+18887533869" class="btn btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+      </svg>
+      Call Now
+    </a>
+    <a href="#verify" class="btn btn-ghost" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: white;">
+      Verify Insurance
+    </a>
+  </div>
+
+  <script>
+    // Intersection Observer for scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animated');
+          if (entry.target.classList.contains('stagger-children')) {
+            entry.target.querySelectorAll(':scope > *').forEach((child, i) => {
+              child.style.transitionDelay = `${i * 0.1}s`;
+              setTimeout(() => child.classList.add('animated'), i * 100);
+            });
+          }
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll(
+      '.fade-up, .fade-in, .slide-left, .slide-right, .scale-in, .section-label, .step-num'
+    ).forEach(el => observer.observe(el));
+
+    // Animated number counter
+    function animateCounter(el) {
+      const target = parseInt(el.dataset.target, 10);
+      const step   = target / (1200 / 16);
+      let current  = 0;
+      const timer  = setInterval(() => {
+        current += step;
+        if (current >= target) { current = target; clearInterval(timer); }
+        el.textContent = Math.floor(current) + (el.dataset.suffix || '');
+      }, 16);
+    }
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateCounter(entry.target);
+          counterObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('.count-up').forEach(el => counterObserver.observe(el));
+
+    // Sticky nav shadow on scroll
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      if (nav) nav.style.boxShadow = window.scrollY > 10
+        ? '0 2px 20px rgba(0,0,0,0.1)' : 'none';
+    }, { passive: true });
+  </script>
+
+</body>
+</html>

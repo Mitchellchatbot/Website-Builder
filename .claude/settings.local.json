@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"d:\\\\Video Recording\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\Sofyan Abdullah\\\\.claude\\\\projects\\\\d--Video-Recording\\\\memory\")",
+      "Read(//c/Users/Sofyan Abdullah/AppData/**)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Sofyan Abdullah\\\\.claude\\\\skills\" -Filter \"SKILL.md\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Sofyan Abdullah\" -Filter \"SKILL.md\" -Recurse -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(Get-ChildItem -Recurse \"D:\\\\Website Generator App\\\\backend\")",
+      "Bash(Select-Object FullName, Length)",
+      "Bash(find \"D:\\\\Website Generator App\" -type f 2>/dev/null)",
+      "Read(//d/Website Generator App/**)",
+      "Bash(python -c ' *)",
+      "Read(//mnt/skills/user/rehab-website-builder/**)",
+      "Read(//c/Users/Sofyan Abdullah/**)",
+      "PowerShell(Select-String -Pattern \"skill\" -i)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Sofyan Abdullah\\\\.claude\" -Recurse | Where-Object { $_.Name -match \"skill\" -or $_.FullName -match \"skill\" } | Select-Object FullName)",
+      "PowerShell(wsl ls /mnt/skills/user/ 2>&1)",
+      "PowerShell(wsl ls ~/.claude/skills/ 2>&1)",
+      "Bash(find / -name \"SKILL.md\" 2>/dev/null | head -20)",
+      "Read(//d//**)",
+      "Bash(ls ~/.claude/skills/ 2>/dev/null || echo \"not found\"; ls /mnt/skills/ 2>/dev/null || echo \"not found\")",
+      "Read(//mnt/**)",
+      "Read(//root/**)",
+      "Bash(ls /home/)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Sofyan Abdullah\\\\.config\" -Recurse -Name 2>&1 | Where-Object { $_ -match \"skill\" } | Select-Object -First 20)",
+      "Bash(mkdir -p /mnt/skills/user/rehab-website-builder && echo \"created\" || echo \"failed\")",
+      "PowerShell(Select-String -Pattern \"claude|anthropic\" -CaseSensitive:$false)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Website Generator App\\\\backend\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Video Recording\\\\backend\" -Name)",
+      "Bash(Select-String -Pattern \"\\(app|main|server|run\\)\\\\.py$\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Sofyan Abdullah\\.claude\\projects\\d--Video-Recording\\memory",
+      "D:\\Website Generator App\\backend",
+      "\\dev",
+      "\\mnt\\skills\\user"
+    ]
+  }
+}

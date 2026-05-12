@@ -1,0 +1,48 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+pip-log.txt
+
+# Output & generated files
+output/*/
+!output/**/.gitkeep
+videos/
+*.webm
+*.mp4
+
+# Sensitive data
+leads.csv
+netlify_sites.json
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/.next/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+D:\Video Recording\backend\output
+backend/output/
