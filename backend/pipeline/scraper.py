@@ -31,32 +31,81 @@ class ScrapeFailedError(Exception):
 # HELPERS
 # ─────────────────────────────────────────────
 
-def resize_if_needed(image_path: Path, max_dimension: int = 2000) -> None:
-    """Resize image in place if either dimension exceeds max_dimension. Deletes corrupt files."""
-    path_str = str(image_path).lower()
-    if path_str.endswith('.svg'):
-        return
+def convert_to_png(image_path: Path, max_dimension: int = 2000, browser=None) -> Path | None:
+    """Convert any image to PNG, resize if needed. Returns the .png path or None on failure."""
+
+    # ── SVG → PNG via Playwright ──────────────────────────────────────────────
+    if image_path.suffix.lower() == ".svg":
+        try:
+            def _rasterize_svg(pw_browser) -> bytes:
+                page = pw_browser.new_page(viewport={"width": 400, "height": 400})
+                try:
+                    page.goto(image_path.resolve().as_uri(), wait_until="load", timeout=10000)
+                    page.wait_for_timeout(300)
+                    dims = page.evaluate("""() => {
+                        const s = document.querySelector('svg');
+                        if (!s) return {w: 0, h: 0};
+                        const r = s.getBoundingClientRect();
+                        return {w: Math.round(r.width), h: Math.round(r.height)};
+                    }""")
+                    w = dims.get("w") or 400
+                    h = dims.get("h") or 400
+                    scale = min(max_dimension / w, max_dimension / h, 1.0)
+                    vw, vh = max(1, int(w * scale)), max(1, int(h * scale))
+                    page.set_viewport_size({"width": vw, "height": vh})
+                    return page.screenshot(type="png", full_page=False)
+                finally:
+                    page.close()
+
+            if browser is not None:
+                # Reuse the already-open Playwright browser — no nested sync_playwright()
+                png_bytes = _rasterize_svg(browser)
+            else:
+                with sync_playwright() as p:
+                    b = p.chromium.launch(headless=True)
+                    try:
+                        png_bytes = _rasterize_svg(b)
+                    finally:
+                        b.close()
+
+            png_path = image_path.with_suffix(".png")
+            png_path.write_bytes(png_bytes)
+            image_path.unlink()
+            return png_path
+        except Exception as e:
+            print(f"    ⚠  Could not rasterize SVG {image_path.name}: {e}")
+            try:
+                image_path.unlink()
+            except OSError:
+                pass
+            return None
+
+    # ── Raster → PNG via PIL ──────────────────────────────────────────────────
     try:
         with PILImage.open(image_path) as img:
             img.verify()
         with PILImage.open(image_path) as img:
-            width, height = img.size
-            if width <= max_dimension and height <= max_dimension:
-                return
-            if width >= height:
-                new_w = max_dimension
-                new_h = int(height * (max_dimension / width))
-            else:
-                new_h = max_dimension
-                new_w = int(width * (max_dimension / height))
-            resized = img.resize((new_w, new_h), PILImage.LANCZOS)
-            resized.save(image_path, optimize=True, quality=85)
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGBA")
+            w, h = img.size
+            if w > max_dimension or h > max_dimension:
+                if w >= h:
+                    img = img.resize((max_dimension, int(h * max_dimension / w)), PILImage.LANCZOS)
+                else:
+                    img = img.resize((int(w * max_dimension / h), max_dimension), PILImage.LANCZOS)
+            png_path = image_path.with_suffix(".png")
+            img.save(png_path, "PNG", optimize=True)
+
+        if image_path != png_path:
+            image_path.unlink()
+        return png_path
     except Exception as e:
         print(f"    ⚠  Removing unprocessable image {image_path.name}: {e}")
         try:
             image_path.unlink()
         except OSError:
             pass
+        return None
 
 
 def ensure_protocol(url: str) -> str:
@@ -105,7 +154,7 @@ def find_contact_url(html: str, base_url: str) -> str | None:
     return None
 
 
-def download_images(html: str, base_url: str, images_dir: Path) -> list[dict]:
+def download_images(html: str, base_url: str, images_dir: Path, browser=None) -> list[dict]:
     """Download all <img> assets from the homepage."""
     soup = BeautifulSoup(html, "lxml")
     img_tags = soup.find_all("img")
@@ -143,19 +192,19 @@ def download_images(html: str, base_url: str, images_dir: Path) -> list[dict]:
                 if ext not in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"}:
                     ext = ".jpg"
 
-                # Use the count of already-downloaded images so numbering
-                # is always sequential (001, 002, 003 ...) with no gaps.
-                filename = f"image_{len(downloaded) + 1:03d}{ext}"
+                # Save with original ext first, then convert to PNG below
+                idx      = len(downloaded) + 1
+                filename = f"image_{idx:03d}{ext}"
                 filepath = images_dir / filename
 
                 with open(filepath, "wb") as f:
                     f.write(response.content)
 
-                resize_if_needed(filepath)
+                png_path = convert_to_png(filepath, browser=browser)
 
-                if filepath.exists():
+                if png_path and png_path.exists():
                     downloaded.append({
-                        "filename": filename,
+                        "filename": png_path.name,
                         "url": img_url,
                         "alt": img.get("alt", "").strip(),
                     })
@@ -660,7 +709,7 @@ def scrape_company(company_name: str, url: str, browser, output_dir: Path | None
 
         # ── 3. Download images ────────────────────────────────
         print("  🖼   Downloading images...")
-        data["images"] = download_images(homepage_html, url, images_dir)
+        data["images"] = download_images(homepage_html, url, images_dir, browser=browser)
         print(f"  ✅  {len(data['images'])} image(s) downloaded.")
 
         # ── 4. Extract HTML sections + contact links ──────────

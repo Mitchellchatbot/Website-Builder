@@ -78,11 +78,13 @@ def list_leads(
         first = row.get("first_name") or ""
         last  = row.get("last_name")  or ""
         name  = f"{first} {last}".strip() or row.get("company_name") or "—"
+        raw_url = row.get("company_website_url") or ""
+        website_url = raw_url if raw_url.startswith(("http://", "https://")) else f"https://{raw_url}" if raw_url else None
         leads.append({
             "id":                  row["id"],
             "name":                name,
             "company_name":        row.get("company_name"),
-            "company_website_url": row.get("company_website_url"),
+            "company_website_url": website_url,
             "has_demo":            row.get("demo_site_url") is not None,
             "demo_url":            row.get("demo_site_url"),
             "demo_generated_at":   row.get("demo_site_generated_at"),

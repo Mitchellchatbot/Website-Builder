@@ -511,6 +511,7 @@ Even if the original site had different nav items, this generated site uses ONLY
    - Footer grid: logo + tagline + seals | nav links | contact (phone, email, areas)
      - Nav links column lists exactly these 5 links: Programs, What We Treat, Why Us, About, Contact
    - Footer columns: `class="fade-up"` staggered
+   - Footer bottom copyright line: `© 2026 {company_name}. All rights reserved.` — year is ALWAYS 2026, never any other year
 
 ### Step 3 — Design System
 - Primary color: from logo → nav, footer, CTA banner, primary buttons

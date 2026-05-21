@@ -24,6 +24,8 @@ import requests
 from pathlib import Path
 from dotenv import load_dotenv
 
+from services.html_chat_editor import rewrite_asset_urls
+
 load_dotenv()
 
 ROOT_DIR      = Path(__file__).parent.parent  # backend/
@@ -106,9 +108,14 @@ def build_zip(lead_path: Path) -> bytes:
     if not index_html.exists():
         raise FileNotFoundError(f"index.html not found in {lead_path}")
 
+    # Final safety net: rewrite any localhost asset-proxy URLs to relative `images/<file>`
+    # paths before we ship. The backend rewrites on every save too, but this guarantees
+    # nothing broken ever reaches Netlify even if the on-disk HTML predates that fix.
+    html = rewrite_asset_urls(index_html.read_text(encoding="utf-8"))
+
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.write(index_html, "index.html")
+        zf.writestr("index.html", html)
         if images_dir.exists():
             for img in sorted(images_dir.iterdir()):
                 if img.is_file():

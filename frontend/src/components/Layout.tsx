@@ -126,10 +126,12 @@ function Sidebar() {
           gap: 3,
         }}
       >
-        <SidebarLink to="/dashboard" icon="📊" label="Dashboard" />
-        <SidebarLink to="/leads"     icon="🎯" label="Leads" end />
-        <SidebarLink to="/active"    icon="⚡" label="Active Runs" />
-        <SidebarLink to="/history"   icon="📋" label="History" />
+        <SidebarLink to="/dashboard"    icon="📊" label="Dashboard" />
+        <SidebarLink to="/leads"        icon="🎯" label="Leads" end />
+        <SidebarLink to="/custom-links" icon="🔗" label="Custom Links" />
+        <SidebarLink to="/websites"     icon="🌐" label="Websites" />
+        <SidebarLink to="/active"       icon="⚡" label="Active Runs" />
+        <SidebarLink to="/history"      icon="📋" label="History" />
       </nav>
 
       {/* Spacer */}

@@ -34,9 +34,18 @@ export interface ActiveCompletedItem {
   completed_at: string | null;
 }
 
+export interface AwaitingReviewItem {
+  id: string;
+  lead_id: string;
+  lead_name: string;
+  company_name: string;
+  started_at: string | null;
+}
+
 export interface ActiveRunsResponse {
   running: ActiveRunItem[];
   recently_completed: ActiveCompletedItem[];
+  awaiting_review: AwaitingReviewItem[];
 }
 
 export interface DashboardStats {
@@ -107,12 +116,53 @@ export interface HistoryItem {
   error: string | null;
   started_at: string | null;
   completed_at: string | null;
+  generated_html_path: string | null;
   lead_name: string;
   company_name: string;
 }
 
 export interface HistoryResponse {
   history: HistoryItem[];
+}
+
+export interface CustomLinkRun {
+  id: string;
+  custom_link_id: string;
+  status: string;
+  netlify_url: string | null;
+  error: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  generated_html_path: string | null;
+}
+
+export interface CustomLink {
+  id: string;
+  url: string;
+  label: string;
+  created_at: string | null;
+  latest_run: CustomLinkRun | null;
+}
+
+export interface CustomLinksResponse {
+  custom_links: CustomLink[];
+}
+
+export interface CreateCustomLinkResponse {
+  id: string;
+  url: string;
+  label: string | null;
+  created_at: string | null;
+}
+
+export interface CustomBatchStatusItem {
+  id: string;
+  custom_link_id: string;
+  status: string;
+  netlify_url: string | null;
+  error: string | null;
+  label: string;
+  url: string;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -175,9 +225,142 @@ export const api = {
   getHistory: (): Promise<HistoryResponse> =>
     request("/history"),
 
+  deleteHistoryItem: (lwId: string): Promise<{ deleted: boolean }> =>
+    request(`/history/${lwId}`, { method: "DELETE" }),
+
   getActiveRuns: (): Promise<ActiveRunsResponse> =>
     request("/active"),
 
   getDashboardStats: (): Promise<DashboardStats> =>
     request("/dashboard/stats"),
+
+  getCustomLinks: (): Promise<CustomLinksResponse> =>
+    request("/custom-links"),
+
+  exportCustomLinksUrl: (ids?: string[]): string => {
+    if (ids && ids.length > 0) return `${BASE}/custom-links/export?ids=${ids.join(",")}`;
+    return `${BASE}/custom-links/export`;
+  },
+
+  createCustomLink: (url: string, label?: string): Promise<CreateCustomLinkResponse> =>
+    request("/custom-links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, label }),
+    }),
+
+  deleteCustomLink: (id: string): Promise<{ deleted: boolean }> =>
+    request(`/custom-links/${id}`, { method: "DELETE" }),
+
+  generateForCustomLink: (id: string): Promise<{ custom_link_website_id: string; status: string }> =>
+    request(`/custom-links/${id}/generate`, { method: "POST" }),
+
+  generateCustomBatch: (
+    customLinkIds: string[],
+  ): Promise<{ queued: { custom_link_id: string; custom_link_website_id: string; status: string }[] }> =>
+    request("/custom-links/generate/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ custom_link_ids: customLinkIds }),
+    }),
+
+  getCustomBatchStatus: (ids: string[]): Promise<CustomBatchStatusItem[]> =>
+    request(`/custom-links/generate/batch/status?ids=${ids.join(",")}`),
+
+  retryCustomGeneration: (clwId: string): Promise<{ status: string; custom_link_website_id: string }> =>
+    request(`/custom-links/generate/${clwId}/retry`, { method: "POST" }),
+
+  previewCustomHtmlUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/preview`,
+
+  deployCustomLink: (clwId: string): Promise<{ status: string; custom_link_website_id: string }> =>
+    request(`/custom-links/generate/${clwId}/deploy`, { method: "POST" }),
+
+  cancelCustomRun: (clwId: string): Promise<{ cancelled: boolean }> =>
+    request(`/custom-links/generate/${clwId}/cancel`, { method: "POST" }),
+
+  customAssetsUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/assets`,
+
+  customUploadAssetUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/upload-asset`,
+
+  customAssetBaseUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/asset`,
+
+  customHtmlUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/html`,
+
+  saveCustomHtml: (clwId: string, html: string): Promise<{ saved: boolean }> =>
+    request(`/custom-links/generate/${clwId}/html`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html }),
+    }),
+
+  customChatEditUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/chat-edit`,
+
+  customUndoUrl: (clwId: string): string =>
+    `${BASE}/custom-links/generate/${clwId}/undo`,
+
+  uploadLeadAsset: (lwId: string, file: File): Promise<{ filename: string; size: number }> => {
+    const form = new FormData();
+    form.append("file", file);
+    return request(`/generate/${lwId}/upload-asset`, { method: "POST", body: form });
+  },
+
+  uploadCustomAsset: (clwId: string, file: File): Promise<{ filename: string; size: number }> => {
+    const form = new FormData();
+    form.append("file", file);
+    return request(`/custom-links/generate/${clwId}/upload-asset`, { method: "POST", body: form });
+  },
+
+  cancelLeadRun: (lwId: string): Promise<{ cancelled: boolean }> =>
+    request(`/generate/${lwId}/cancel`, { method: "POST" }),
+
+  deployLead: (lwId: string): Promise<{ status: string; lead_website_id: string }> =>
+    request(`/generate/${lwId}/deploy`, { method: "POST" }),
+
+  previewLeadHtmlUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/preview`,
+
+  leadAssetsUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/assets`,
+
+  leadUploadAssetUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/upload-asset`,
+
+  leadAssetBaseUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/asset`,
+
+  leadHtmlUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/html`,
+
+  saveLeadHtml: (lwId: string, html: string): Promise<{ saved: boolean }> =>
+    request(`/generate/${lwId}/html`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html }),
+    }),
+
+  leadChatEditUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/chat-edit`,
+
+  leadUndoUrl: (lwId: string): string =>
+    `${BASE}/generate/${lwId}/undo`,
+
+  setLeadUrl: (lwId: string, url: string): Promise<{ status: string; netlify_url: string }> =>
+    request(`/generate/${lwId}/set-url`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }),
+
+  setCustomUrl: (clwId: string, url: string): Promise<{ status: string; netlify_url: string }> =>
+    request(`/custom-links/generate/${clwId}/set-url`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }),
 };

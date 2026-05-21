@@ -1,34 +1,44 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, type HistoryItem } from "../api/client";
+import PreviewModal from "../components/PreviewModal";
 
-const TERMINAL = new Set(["completed", "failed"]);
+const TERMINAL = new Set(["completed", "failed", "cancelled", "skipped"]);
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  scraping: "Scraping",
-  generating: "Generating",
-  deploying: "Deploying",
-  completed: "Completed",
-  failed: "Failed",
+  pending:           "Pending",
+  scraping:          "Scraping",
+  generating:        "Generating",
+  deploying:         "Deploying",
+  completed:         "Completed",
+  failed:            "Failed",
+  cancelled:         "Cancelled",
+  skipped:           "Skipped",
+  awaiting_approval: "Awaiting Review",
 };
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  pending:    { bg: "rgba(144,144,168,0.12)", color: "#9090a8", border: "rgba(144,144,168,0.25)" },
-  scraping:   { bg: "rgba(251,146,60,0.12)",  color: "#fb923c", border: "rgba(251,146,60,0.25)" },
-  generating: { bg: "rgba(99,102,241,0.12)",  color: "#818cf8", border: "rgba(129,140,248,0.25)" },
-  deploying:  { bg: "rgba(168,85,247,0.12)",  color: "#c084fc", border: "rgba(192,132,252,0.25)" },
-  completed:  { bg: "rgba(74,222,128,0.12)",  color: "#4ade80", border: "rgba(74,222,128,0.25)" },
-  failed:     { bg: "rgba(248,113,113,0.12)", color: "#f87171", border: "rgba(248,113,113,0.25)" },
+  pending:           { bg: "rgba(144,144,168,0.12)", color: "#9090a8", border: "rgba(144,144,168,0.25)" },
+  scraping:          { bg: "rgba(251,146,60,0.12)",  color: "#fb923c", border: "rgba(251,146,60,0.25)" },
+  generating:        { bg: "rgba(99,102,241,0.12)",  color: "#818cf8", border: "rgba(129,140,248,0.25)" },
+  deploying:         { bg: "rgba(168,85,247,0.12)",  color: "#c084fc", border: "rgba(192,132,252,0.25)" },
+  completed:         { bg: "rgba(74,222,128,0.12)",  color: "#4ade80", border: "rgba(74,222,128,0.25)" },
+  failed:            { bg: "rgba(248,113,113,0.12)", color: "#f87171", border: "rgba(248,113,113,0.25)" },
+  cancelled:         { bg: "rgba(107,114,128,0.12)", color: "#9ca3af", border: "rgba(107,114,128,0.25)" },
+  skipped:           { bg: "rgba(250,204,21,0.10)",  color: "#facc15", border: "rgba(250,204,21,0.25)" },
+  awaiting_approval: { bg: "rgba(56,189,248,0.10)",  color: "#38bdf8", border: "rgba(56,189,248,0.25)" },
 };
 
 const STATUS_ICON: Record<string, string> = {
-  pending: "⏳",
-  scraping: "🔍",
-  generating: "✨",
-  deploying: "🚀",
-  completed: "✅",
-  failed: "❌",
+  pending:           "⏳",
+  scraping:          "🔍",
+  generating:        "✨",
+  deploying:         "🚀",
+  completed:         "✅",
+  failed:            "❌",
+  cancelled:         "⏹",
+  skipped:           "⏭",
+  awaiting_approval: "👁",
 };
 
 function relativeTime(iso: string | null): string {
@@ -48,7 +58,12 @@ export default function HistoryPage() {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retrying,    setRetrying]    = useState<string | null>(null);
+  const [deletingId,  setDeletingId]  = useState<string | null>(null);
+  const [settingUrlId, setSettingUrlId] = useState<string | null>(null);
+  const [urlInput,    setUrlInput]    = useState("");
+  const [previewItem, setPreviewItem] = useState<HistoryItem | null>(null);
+  const [deployingId, setDeployingId] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -69,11 +84,68 @@ export default function HistoryPage() {
     }
   };
 
+  const handleSetUrl = async (id: string, url: string) => {
+    if (!url.trim()) return;
+    setSettingUrlId(null);
+    setUrlInput("");
+    try {
+      await api.setLeadUrl(id, url.trim());
+      setItems((prev) =>
+        prev.map((i) => i.id === id ? { ...i, status: "completed", netlify_url: url.trim() } : i)
+      );
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to save URL");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await api.deleteHistoryItem(id);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeployFromHistory = async (item: HistoryItem) => {
+    setDeployingId(item.id);
+    try {
+      await api.deployLead(item.id);
+      setPreviewItem(null);
+      setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, status: "pending" } : i));
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Deploy failed");
+    } finally {
+      setDeployingId(null);
+    }
+  };
+
   const completedCount = items.filter((i) => i.status === "completed").length;
   const failedCount = items.filter((i) => i.status === "failed").length;
   const inProgressCount = items.filter((i) => !TERMINAL.has(i.status)).length;
 
   return (
+    <>
+    {previewItem && (
+      <PreviewModal
+        label={`${previewItem.lead_name} — ${previewItem.company_name}`}
+        previewUrl={api.previewLeadHtmlUrl(previewItem.id)}
+        assetsUrl={api.leadAssetsUrl(previewItem.id)}
+        assetBaseUrl={api.leadAssetBaseUrl(previewItem.id)}
+        htmlUrl={api.leadHtmlUrl(previewItem.id)}
+        uploadUrl={api.leadUploadAssetUrl(previewItem.id)}
+        chatEditUrl={api.leadChatEditUrl(previewItem.id)}
+        undoUrl={api.leadUndoUrl(previewItem.id)}
+        onDeploy={previewItem.status === "awaiting_approval" || previewItem.status === "cancelled"
+          ? () => handleDeployFromHistory(previewItem)
+          : undefined}
+        deploying={deployingId === previewItem.id}
+        onClose={() => setPreviewItem(null)}
+      />
+    )}
     <div className="page-enter" style={{ minHeight: "100vh", padding: "36px 32px" }}>
       {/* Header */}
       <div style={{ maxWidth: 900, margin: "0 auto 32px" }}>
@@ -133,7 +205,7 @@ export default function HistoryPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                  {["Lead", "Company", "Status", "URL", "Started", "Action"].map((h) => (
+                  {["Lead", "Company", "Status", "URL", "Started", "Action", ""].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -157,12 +229,14 @@ export default function HistoryPage() {
                 {items.map((item, i) => {
                   const colors = STATUS_COLORS[item.status] ?? STATUS_COLORS.pending;
                   const isInProgress = !TERMINAL.has(item.status);
+                  const isDeleting = deletingId === item.id;
                   return (
                     <tr
                       key={item.id}
                       style={{
                         borderBottom: i < items.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                         transition: "background 150ms ease",
+                        opacity: isDeleting ? 0.4 : 1,
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.025)")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -227,7 +301,69 @@ export default function HistoryPage() {
                         {relativeTime(item.started_at)}
                       </td>
                       <td style={{ padding: "13px 16px" }}>
-                        {item.status === "failed" ? (
+                        {settingUrlId === item.id ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <input
+                              autoFocus
+                              type="text"
+                              placeholder="https://your-site.netlify.app"
+                              value={urlInput}
+                              onChange={(e) => setUrlInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSetUrl(item.id, urlInput);
+                                if (e.key === "Escape") { setSettingUrlId(null); setUrlInput(""); }
+                              }}
+                              style={{
+                                background: "rgba(255,255,255,0.06)",
+                                border: "1px solid rgba(124,58,237,0.4)",
+                                borderRadius: 5, padding: "4px 8px",
+                                color: "#f0f0f8", fontSize: 12,
+                                fontFamily: "Inter, sans-serif", width: 200,
+                              }}
+                            />
+                            <button
+                              onClick={() => handleSetUrl(item.id, urlInput)}
+                              disabled={!urlInput.trim()}
+                              className="btn-primary"
+                              style={{ padding: "4px 10px", fontSize: 12 }}
+                            >Save</button>
+                            <button
+                              onClick={() => { setSettingUrlId(null); setUrlInput(""); }}
+                              style={{
+                                background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
+                                color: "#5a5a72", borderRadius: 5, padding: "4px 8px",
+                                fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                              }}
+                            >✕</button>
+                          </div>
+                        ) : item.status === "awaiting_approval" || (item.status === "cancelled" && item.generated_html_path) ? (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              onClick={() => setPreviewItem(item)}
+                              style={{
+                                background: "rgba(124,58,237,0.15)",
+                                border: "1px solid rgba(124,58,237,0.35)",
+                                color: "#c4b5fd",
+                                borderRadius: 5, padding: "5px 12px",
+                                fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                              }}
+                            >
+                              👁 Preview
+                            </button>
+                            {item.status === "cancelled" && (
+                              <button
+                                onClick={() => { setSettingUrlId(item.id); setUrlInput(""); }}
+                                style={{
+                                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                                  color: "#5a5a72", borderRadius: 5, padding: "5px 10px",
+                                  fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                                }}
+                              >
+                                + Set URL
+                              </button>
+                            )}
+                          </div>
+                        ) : item.status === "failed" ? (
                           <button
                             onClick={() => handleRetry(item)}
                             disabled={retrying === item.id}
@@ -246,7 +382,39 @@ export default function HistoryPage() {
                           >
                             View →
                           </a>
+                        ) : item.status === "cancelled" ? (
+                          <button
+                            onClick={() => { setSettingUrlId(item.id); setUrlInput(""); }}
+                            title="Manually record the Netlify URL you deployed to"
+                            style={{
+                              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                              color: "#5a5a72", borderRadius: 5, padding: "5px 10px",
+                              fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif",
+                            }}
+                          >
+                            + Set URL
+                          </button>
                         ) : null}
+                      </td>
+                      <td style={{ padding: "13px 16px" }}>
+                        <button
+                          disabled={isDeleting || isInProgress}
+                          onClick={() => handleDelete(item.id)}
+                          title={isInProgress ? "Cannot delete an active run" : "Delete"}
+                          style={{
+                            background: "rgba(248,113,113,0.08)",
+                            border: "1px solid rgba(248,113,113,0.2)",
+                            color: isInProgress ? "#3a3a50" : "#f87171",
+                            borderRadius: 5,
+                            padding: "5px 9px",
+                            fontSize: 12,
+                            cursor: isInProgress || isDeleting ? "not-allowed" : "pointer",
+                            fontFamily: "Inter, sans-serif",
+                            opacity: isInProgress ? 0.35 : 1,
+                          }}
+                        >
+                          {isDeleting ? "…" : "✕"}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -257,6 +425,7 @@ export default function HistoryPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
 

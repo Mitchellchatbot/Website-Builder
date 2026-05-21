@@ -15,6 +15,7 @@ export default function LeadsPage() {
   const [submitting,  setSubmitting]  = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [exporting,   setExporting]   = useState(false);
+  const [query,       setQuery]       = useState("");
 
   const fetchLeads = useCallback(() => {
     setLoading(true);
@@ -33,10 +34,25 @@ export default function LeadsPage() {
     fetchLeads();
   }, [fetchLeads]);
 
-  const allSelected = leads.length > 0 && selected.size === leads.length;
+  const q = query.trim().toLowerCase();
+  const visibleLeads = q
+    ? leads.filter(
+        (l) =>
+          l.name.toLowerCase().includes(q) ||
+          (l.company_name ?? "").toLowerCase().includes(q) ||
+          (l.company_website_url ?? "").toLowerCase().includes(q)
+      )
+    : leads;
+
+  const allSelected = visibleLeads.length > 0 && visibleLeads.every((l) => selected.has(l.id));
 
   const toggleAll = () => {
-    setSelected(allSelected ? new Set() : new Set(leads.map((l) => l.id)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) visibleLeads.forEach((l) => next.delete(l.id));
+      else             visibleLeads.forEach((l) => next.add(l.id));
+      return next;
+    });
   };
 
   const toggleOne = (id: string) => {
@@ -87,11 +103,11 @@ export default function LeadsPage() {
 
           {/* Stats row */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <StatPill label="Total" value={leads.length} color="#7c3aed" />
+            <StatPill label={q ? "Matches" : "Total"} value={visibleLeads.length} color="#7c3aed" />
             <StatPill label="Selected" value={selected.size} color="#ff6b01" />
             <StatPill
               label="With Demo"
-              value={leads.filter((l) => l.has_demo).length}
+              value={visibleLeads.filter((l) => l.has_demo).length}
               color="#4ade80"
             />
           </div>
@@ -121,22 +137,61 @@ export default function LeadsPage() {
 
         {/* Controls row */}
         <div style={{ marginBottom: 16 }}>
-          {/* Row 1: generate button + demo filter + export */}
+          {/* Row 1: generate button + search + demo filter + export */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 10 }}>
-            <button
-              onClick={handleGenerateSelected}
-              disabled={selected.size === 0 || submitting}
-              className="btn-primary"
-              style={selected.size === 0 ? { opacity: 0.4, cursor: "not-allowed" } : {}}
-            >
-              {submitting ? (
-                <><Spinner size={12} />Queuing…</>
-              ) : selected.size > 0 ? (
-                <>⚡ Generate {selected.size} site{selected.size > 1 ? "s" : ""}</>
-              ) : (
-                <>⚡ Generate selected</>
-              )}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={handleGenerateSelected}
+                disabled={selected.size === 0 || submitting}
+                className="btn-primary"
+                style={selected.size === 0 ? { opacity: 0.4, cursor: "not-allowed" } : {}}
+              >
+                {submitting ? (
+                  <><Spinner size={12} />Queuing…</>
+                ) : selected.size > 0 ? (
+                  <>⚡ Generate {selected.size} site{selected.size > 1 ? "s" : ""}</>
+                ) : (
+                  <>⚡ Generate selected</>
+                )}
+              </button>
+
+              {/* Search */}
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#5a5a72", pointerEvents: "none" }}>
+                  🔍
+                </span>
+                <input
+                  type="search"
+                  placeholder="Search leads…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  style={{
+                    paddingLeft: 32,
+                    paddingRight: query ? 28 : 12,
+                    paddingTop: 6,
+                    paddingBottom: 6,
+                    borderRadius: 6,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#f0f0f8",
+                    fontSize: 13,
+                    width: 220,
+                    outline: "none",
+                    transition: "border-color 150ms ease, width 150ms ease",
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)")}
+                  onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
+                />
+                {query && (
+                  <button
+                    onClick={() => setQuery("")}
+                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#5a5a72", cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 0 }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <FilterChips value={demoFilter} onChange={(v) => { setDemoFilter(v); setDateRange("all"); }} />
@@ -218,6 +273,12 @@ export default function LeadsPage() {
                 : "No leads exist yet."
             }
           />
+        ) : visibleLeads.length === 0 ? (
+          <EmptyState
+            icon="🔍"
+            title="No matches"
+            subtitle={`No leads match "${query}". Try a different name, company, or URL.`}
+          />
         ) : (
           <div
             style={{
@@ -264,14 +325,14 @@ export default function LeadsPage() {
                 </tr>
               </thead>
               <tbody>
-                {leads.map((lead, i) => {
+                {visibleLeads.map((lead, i) => {
                   const isSelected = selected.has(lead.id);
                   return (
                     <LeadRow
                       key={lead.id}
                       lead={lead}
                       isSelected={isSelected}
-                      isLast={i === leads.length - 1}
+                      isLast={i === visibleLeads.length - 1}
                       onToggle={() => toggleOne(lead.id)}
                     />
                   );
@@ -353,7 +414,7 @@ function LeadRow({
       >
         {lead.company_website_url ? (
           <a
-            href={lead.company_website_url}
+            href={/^https?:\/\//i.test(lead.company_website_url) ? lead.company_website_url : `https://${lead.company_website_url}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

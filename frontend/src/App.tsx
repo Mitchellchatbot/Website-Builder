@@ -6,6 +6,8 @@ import HistoryPage from "./pages/HistoryPage";
 import BatchPage from "./pages/BatchPage";
 import ActivePage from "./pages/ActivePage";
 import DashboardPage from "./pages/DashboardPage";
+import CustomLinksPage from "./pages/CustomLinksPage";
+import WebsitesPage from "./pages/WebsitesPage";
 
 export default function App() {
   return (
@@ -19,6 +21,8 @@ export default function App() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/active" element={<ActivePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/custom-links" element={<CustomLinksPage />} />
+          <Route path="/websites" element={<WebsitesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

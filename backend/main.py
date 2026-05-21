@@ -6,6 +6,7 @@ from routes.generate import router as generate_router
 from routes.history import router as history_router
 from routes.active import router as active_router
 from routes.dashboard import router as dashboard_router
+from routes.custom_links import router as custom_links_router
 
 app = FastAPI(title="Website Generator API")
 
@@ -26,6 +27,7 @@ app.include_router(generate_router)
 app.include_router(history_router)
 app.include_router(active_router)
 app.include_router(dashboard_router)
+app.include_router(custom_links_router)
 
 
 @app.get("/health")

@@ -1,13 +1,18 @@
+import base64
 import logging
+import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from services.supabase_client import get_client
-from services.pipeline import run_pipeline
+from services.pipeline import OUTPUT_DIR, cancel_lead_run, run_pipeline
+from services.html_chat_editor import edit_html_with_chat, rewrite_asset_urls
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -62,8 +67,11 @@ def _run_batch(pairs: list[tuple[str, str]], resume_from: str = "scrape") -> Non
         start = time.monotonic()
 
         try:
-            run_pipeline(lead_id, lead_website_id, resume_from=resume_from)
+            result = run_pipeline(lead_id, lead_website_id, resume_from=resume_from)
             duration = round(time.monotonic() - start)
+            if isinstance(result, dict) and result.get("status") in ("cancelled", "awaiting_approval"):
+                logger.info("[%d/%d] ⏸ %s after %ds", index, total, result.get("status"), duration)
+                continue
             logger.info("[%d/%d] ✅ Completed in %ds", index, total, duration)
             succeeded += 1
             consecutive_failures = 0
@@ -266,3 +274,291 @@ def get_generation_status(lead_website_id: str):
             "company_website_url": lead.get("company_website_url"),
         },
     }
+
+
+_MIME_MAP = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+             "gif": "image/gif", "webp": "image/webp"}
+
+
+class UpdateHtmlRequest(BaseModel):
+    html: str
+
+
+@router.post("/generate/{lead_website_id}/upload-asset")
+async def upload_lead_asset(lead_website_id: str, file: UploadFile = File(...)):
+    safe = os.path.basename(file.filename or "upload")
+    ext = safe.rsplit(".", 1)[-1].lower() if "." in safe else ""
+    if not safe or ext not in _MIME_MAP:
+        raise HTTPException(status_code=400, detail=f"Unsupported or missing file type")
+
+    db = get_client()
+    result = db.table("lead_websites").select("lead_id").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    lead_id = result.data[0]["lead_id"]
+    images_dir = OUTPUT_DIR / lead_id / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    contents = await file.read()
+    (images_dir / safe).write_bytes(contents)
+    return {"filename": safe, "size": len(contents)}
+
+
+@router.post("/generate/{lead_website_id}/cancel")
+def cancel_lead(lead_website_id: str):
+    db = get_client()
+    result = db.table("lead_websites").select(
+        "id, status, lead_id"
+    ).eq("id", lead_website_id).limit(1).execute()
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Generation run not found")
+
+    lw = result.data[0]
+    active = {"pending", "scraping", "generating", "deploying"}
+    if lw["status"] not in active:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Run is not active (status: '{lw['status']}')",
+        )
+
+    cancel_lead_run(lead_website_id)
+
+    db.table("lead_websites").update({
+        "status": "cancelled",
+        "error": "Cancelled by user",
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", lead_website_id).execute()
+
+    return {"cancelled": True}
+
+
+@router.post("/generate/{lead_website_id}/deploy")
+def deploy_lead(lead_website_id: str, background_tasks: BackgroundTasks):
+    db = get_client()
+    result = db.table("lead_websites").select("*").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    lw = result.data[0]
+    if lw["status"] not in ("awaiting_approval", "cancelled"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Can only deploy from 'awaiting_approval' or 'cancelled' status (current: '{lw['status']}')",
+        )
+
+    html_path = lw.get("generated_html_path")
+    if not html_path or not Path(html_path).exists():
+        raise HTTPException(status_code=400, detail="Generated HTML not found — regenerate first")
+
+    db.table("lead_websites").update({"status": "pending"}).eq("id", lead_website_id).execute()
+
+    background_tasks.add_task(_run_batch, [(lw["lead_id"], lead_website_id)], "deploy")
+    return {"status": "pending", "lead_website_id": lead_website_id}
+
+
+@router.get("/generate/{lead_website_id}/preview", response_class=HTMLResponse)
+def preview_lead_html(lead_website_id: str):
+    db = get_client()
+    result = db.table("lead_websites").select(
+        "status, generated_html_path"
+    ).eq("id", lead_website_id).limit(1).execute()
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    html_path_str = result.data[0].get("generated_html_path")
+    if not html_path_str or not Path(html_path_str).exists():
+        raise HTTPException(status_code=404, detail="HTML not yet generated — run the pipeline first")
+
+    html_path = Path(html_path_str)
+    html = html_path.read_text(encoding="utf-8")
+
+    def _inline(match: re.Match) -> str:
+        src = match.group(1)
+        img_file = html_path.parent / src
+        if img_file.exists():
+            ext = img_file.suffix.lower().lstrip(".")
+            mime = _MIME_MAP.get(ext, "image/png")
+            data = base64.standard_b64encode(img_file.read_bytes()).decode()
+            return f'src="data:{mime};base64,{data}"'
+        return match.group(0)
+
+    html = re.sub(r'src="(images/[^"]+)"', _inline, html)
+    return HTMLResponse(content=html)
+
+
+@router.get("/generate/{lead_website_id}/assets")
+def get_lead_assets(lead_website_id: str):
+    db = get_client()
+    result = db.table("lead_websites").select("lead_id").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    lead_id = result.data[0]["lead_id"]
+    images_dir = OUTPUT_DIR / lead_id / "images"
+
+    if not images_dir.exists():
+        return {"assets": []}
+
+    assets = [
+        {"filename": f.name, "size": f.stat().st_size}
+        for f in sorted(images_dir.iterdir())
+        if f.is_file() and f.suffix.lower().lstrip(".") in _MIME_MAP
+    ]
+    return {"assets": assets}
+
+
+@router.get("/generate/{lead_website_id}/asset/{filename}")
+def get_lead_asset_file(lead_website_id: str, filename: str):
+    safe = os.path.basename(filename)
+    if not safe or safe != filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    db = get_client()
+    result = db.table("lead_websites").select("lead_id").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    lead_id = result.data[0]["lead_id"]
+    img_path = OUTPUT_DIR / lead_id / "images" / safe
+
+    if not img_path.exists() or not img_path.is_file():
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    return FileResponse(str(img_path))
+
+
+@router.get("/generate/{lead_website_id}/html")
+def get_lead_html(lead_website_id: str):
+    db = get_client()
+    result = db.table("lead_websites").select("generated_html_path").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    html_path_str = result.data[0].get("generated_html_path")
+    if not html_path_str or not Path(html_path_str).exists():
+        raise HTTPException(status_code=404, detail="HTML not yet generated")
+
+    html_path = Path(html_path_str)
+    html = html_path.read_text(encoding="utf-8")
+    can_undo = html_path.with_suffix(html_path.suffix + ".bak").exists()
+    return {"html": html, "can_undo": can_undo}
+
+
+@router.put("/generate/{lead_website_id}/html")
+def update_lead_html(lead_website_id: str, req: UpdateHtmlRequest):
+    db = get_client()
+    result = db.table("lead_websites").select("generated_html_path").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    html_path_str = result.data[0].get("generated_html_path")
+    if not html_path_str:
+        raise HTTPException(status_code=404, detail="HTML path not set — run generation first")
+
+    html_path = Path(html_path_str)
+    html_path.parent.mkdir(parents=True, exist_ok=True)
+    if html_path.exists():
+        html_path.with_suffix(html_path.suffix + ".bak").write_text(
+            html_path.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+    html_path.write_text(rewrite_asset_urls(req.html), encoding="utf-8")
+    return {"saved": True}
+
+
+@router.post("/generate/{lead_website_id}/chat-edit")
+async def chat_edit_lead_html(
+    lead_website_id: str,
+    message: str = Form(...),
+    image: UploadFile | None = File(default=None),
+):
+    """Apply a chat-driven edit to the generated HTML. Saves a single-step undo backup."""
+    db = get_client()
+    result = db.table("lead_websites").select("generated_html_path").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    html_path_str = result.data[0].get("generated_html_path")
+    if not html_path_str or not Path(html_path_str).exists():
+        raise HTTPException(status_code=404, detail="HTML not yet generated")
+
+    if not message.strip():
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    html_path = Path(html_path_str)
+    current_html = html_path.read_text(encoding="utf-8")
+
+    image_bytes: bytes | None = None
+    image_media_type: str | None = None
+    if image is not None:
+        ext = (image.filename or "").rsplit(".", 1)[-1].lower() if image.filename and "." in image.filename else ""
+        if ext not in _MIME_MAP:
+            raise HTTPException(status_code=400, detail="Unsupported image type")
+        image_bytes = await image.read()
+        image_media_type = _MIME_MAP[ext]
+
+    try:
+        new_html = edit_html_with_chat(current_html, message, image_bytes, image_media_type)
+    except Exception as exc:
+        logger.exception("Chat edit failed for %s", lead_website_id)
+        raise HTTPException(status_code=502, detail=f"Edit failed: {exc}") from exc
+
+    html_path.with_suffix(html_path.suffix + ".bak").write_text(current_html, encoding="utf-8")
+    html_path.write_text(new_html, encoding="utf-8")
+    return {"saved": True, "html": new_html, "can_undo": True}
+
+
+@router.post("/generate/{lead_website_id}/undo")
+def undo_lead_html(lead_website_id: str):
+    """Restore the previous HTML from the single-step .bak backup."""
+    db = get_client()
+    result = db.table("lead_websites").select("generated_html_path").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    html_path_str = result.data[0].get("generated_html_path")
+    if not html_path_str:
+        raise HTTPException(status_code=404, detail="HTML path not set")
+
+    html_path = Path(html_path_str)
+    bak_path = html_path.with_suffix(html_path.suffix + ".bak")
+    if not bak_path.exists():
+        raise HTTPException(status_code=404, detail="Nothing to undo")
+
+    restored = bak_path.read_text(encoding="utf-8")
+    html_path.write_text(restored, encoding="utf-8")
+    bak_path.unlink()
+    return {"restored": True, "html": restored, "can_undo": False}
+
+
+class SetLeadUrlRequest(BaseModel):
+    url: str
+
+
+@router.patch("/generate/{lead_website_id}/set-url")
+def set_lead_netlify_url(lead_website_id: str, req: SetLeadUrlRequest):
+    """Manually record a Netlify URL for a run (e.g. after a cancelled run was deployed by hand)."""
+    db = get_client()
+    result = db.table("lead_websites").select("id, status, lead_id").eq("id", lead_website_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    url = req.url.strip()
+    now = datetime.now(timezone.utc).isoformat()
+
+    db.table("lead_websites").update({
+        "status": "completed",
+        "netlify_url": url,
+        "completed_at": now,
+        "error": None,
+    }).eq("id", lead_website_id).execute()
+
+    lead_id = result.data[0]["lead_id"]
+    db.table("leads").update({
+        "demo_site_url": url,
+        "demo_site_generated_at": now,
+    }).eq("id", lead_id).execute()
+
+    return {"status": "completed", "netlify_url": url}

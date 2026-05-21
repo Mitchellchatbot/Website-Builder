@@ -7,7 +7,7 @@ from services.supabase_client import get_client
 router = APIRouter()
 
 RUNNING_STATUSES  = ["pending", "scraping", "generating", "deploying"]
-TERMINAL_STATUSES = ["completed", "failed", "skipped"]
+TERMINAL_STATUSES = ["completed", "failed", "skipped", "cancelled"]
 
 
 def _parse_iso(ts: str | None) -> datetime | None:
@@ -39,9 +39,17 @@ def get_active():
         .execute()
     )
 
+    awaiting_result = (
+        db.table("lead_websites")
+        .select("id, lead_id, started_at")
+        .eq("status", "awaiting_approval")
+        .order("started_at", desc=True)
+        .execute()
+    )
+
     all_lead_ids = list({
         r["lead_id"]
-        for r in (running_result.data or []) + (completed_result.data or [])
+        for r in (running_result.data or []) + (completed_result.data or []) + (awaiting_result.data or [])
     })
 
     leads_by_id: dict = {}
@@ -88,4 +96,14 @@ def get_active():
             "completed_at": r.get("completed_at"),
         })
 
-    return {"running": running, "recently_completed": recently_completed}
+    awaiting_review = []
+    for r in (awaiting_result.data or []):
+        awaiting_review.append({
+            "id":           r["id"],
+            "lead_id":      r["lead_id"],
+            "lead_name":    _lead_name(r["lead_id"]),
+            "company_name": _company(r["lead_id"]),
+            "started_at":   r.get("started_at"),
+        })
+
+    return {"running": running, "recently_completed": recently_completed, "awaiting_review": awaiting_review}

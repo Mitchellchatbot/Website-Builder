@@ -514,6 +514,7 @@ From the images identify:
    - All elements: `class="fade-up"` staggered
    - Footer grid: logo + tagline + seals | nav links | contact (phone, email, areas)
    - Footer columns: `class="fade-up"` staggered
+   - Footer bottom copyright line: `© 2026 {company_name}. All rights reserved.` — year is ALWAYS 2026, never any other year
 
 ### Step 3 — Design System
 - Primary color: from logo → nav, footer, CTA banner, primary buttons
