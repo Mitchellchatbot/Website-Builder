@@ -6,11 +6,15 @@ export type DateRange   = "all" | "today" | "week" | "month" | "custom";
 export interface Lead {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
+  email: string;
   company_name: string | null;
   company_website_url: string | null;
   has_demo: boolean;
   demo_url: string | null;
   demo_generated_at: string | null;
+  imported_at: string | null;
 }
 
 export interface ActiveRunItem {
@@ -186,6 +190,16 @@ export const api = {
     if (dateEnd)   p.set("date_end",   dateEnd);
     return request(`/leads?${p}`);
   },
+
+  updateLead: (
+    leadId: string,
+    patch: { company_website_url?: string | null; demo_site_url?: string | null },
+  ): Promise<{ updated: boolean }> =>
+    request(`/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }),
 
   exportLeadsUrl: (
     demoFilter: DemoFilter,

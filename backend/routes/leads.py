@@ -2,8 +2,9 @@ import csv
 import io
 from datetime import date, datetime, timezone, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from services.supabase_client import get_client
 
@@ -32,7 +33,7 @@ def _date_bounds(date_range: str, date_start: str | None, date_end: str | None) 
 def _build_query(db, demo_filter: str, date_range: str = "all", date_start: str | None = None, date_end: str | None = None):
     q = (
         db.table("leads")
-        .select("id, first_name, last_name, email, company_name, company_website_url, demo_site_url, demo_site_generated_at")
+        .select("id, first_name, last_name, email, company_name, company_website_url, demo_site_url, demo_site_generated_at, imported_at")
         .not_.is_("company_website_url", "null")
         .order("first_name")
     )
@@ -83,13 +84,42 @@ def list_leads(
         leads.append({
             "id":                  row["id"],
             "name":                name,
+            "first_name":          row.get("first_name") or "",
+            "last_name":           row.get("last_name") or "",
+            "email":               row.get("email") or "",
             "company_name":        row.get("company_name"),
             "company_website_url": website_url,
             "has_demo":            row.get("demo_site_url") is not None,
             "demo_url":            row.get("demo_site_url"),
             "demo_generated_at":   row.get("demo_site_generated_at"),
+            "imported_at":         row.get("imported_at"),
         })
     return {"leads": leads}
+
+
+class LeadUpdate(BaseModel):
+    company_website_url: str | None = None
+    demo_site_url: str | None = None
+
+
+@router.patch("/leads/{lead_id}")
+def update_lead(lead_id: str, body: LeadUpdate):
+    db = get_client()
+
+    result = db.table("leads").select("id").eq("id", lead_id).limit(1).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    patch: dict = {}
+    if body.company_website_url is not None:
+        patch["company_website_url"] = body.company_website_url.strip() or None
+    if body.demo_site_url is not None:
+        patch["demo_site_url"] = body.demo_site_url.strip() or None
+
+    if patch:
+        db.table("leads").update(patch).eq("id", lead_id).execute()
+
+    return {"updated": True}
 
 
 @router.get("/leads/export")

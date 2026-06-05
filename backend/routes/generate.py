@@ -226,9 +226,16 @@ def retry_generation(lead_website_id: str, background_tasks: BackgroundTasks):
     if lw["status"] != "failed":
         raise HTTPException(status_code=400, detail="Only failed runs can be retried")
 
-    # Determine where to resume: skip scrape if data.json is already on disk
+    # Pick the latest stage we can safely resume from. Each stage's "done" artifact
+    # is written only on success, so its presence is a reliable signal:
+    #   - generated_html_path → generation finished, only deploy can have failed
+    #   - scraped_data_path   → scrape finished, generation failed
+    #   - (neither)           → start from scratch
+    generated_html_path = lw.get("generated_html_path")
     scraped_data_path = lw.get("scraped_data_path")
-    if scraped_data_path and Path(scraped_data_path).exists():
+    if generated_html_path and Path(generated_html_path).exists():
+        resume_from = "deploy"
+    elif scraped_data_path and Path(scraped_data_path).exists():
         resume_from = "generate"
     else:
         resume_from = "scrape"
