@@ -169,6 +169,46 @@ export interface CustomBatchStatusItem {
   url: string;
 }
 
+export interface GeneralLinkRun {
+  id: string;
+  general_link_id: string;
+  status: string;
+  netlify_url: string | null;
+  error: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  generated_html_path: string | null;
+}
+
+export interface GeneralLink {
+  id: string;
+  url: string;
+  label: string;
+  created_at: string | null;
+  latest_run: GeneralLinkRun | null;
+}
+
+export interface GeneralLinksResponse {
+  general_links: GeneralLink[];
+}
+
+export interface CreateGeneralLinkResponse {
+  id: string;
+  url: string;
+  label: string | null;
+  created_at: string | null;
+}
+
+export interface GeneralBatchStatusItem {
+  id: string;
+  general_link_id: string;
+  status: string;
+  netlify_url: string | null;
+  error: string | null;
+  label: string;
+  url: string;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, options);
   if (!res.ok) {
@@ -373,6 +413,91 @@ export const api = {
 
   setCustomUrl: (clwId: string, url: string): Promise<{ status: string; netlify_url: string }> =>
     request(`/custom-links/generate/${clwId}/set-url`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }),
+
+  // ── General Sites (niche-agnostic generator) ───────────────────────────────
+
+  getGeneralLinks: (): Promise<GeneralLinksResponse> =>
+    request("/general-sites"),
+
+  exportGeneralLinksUrl: (ids?: string[]): string => {
+    if (ids && ids.length > 0) return `${BASE}/general-sites/export?ids=${ids.join(",")}`;
+    return `${BASE}/general-sites/export`;
+  },
+
+  createGeneralLink: (url: string, label?: string): Promise<CreateGeneralLinkResponse> =>
+    request("/general-sites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, label }),
+    }),
+
+  deleteGeneralLink: (id: string): Promise<{ deleted: boolean }> =>
+    request(`/general-sites/${id}`, { method: "DELETE" }),
+
+  generateForGeneralLink: (id: string): Promise<{ general_link_website_id: string; status: string }> =>
+    request(`/general-sites/${id}/generate`, { method: "POST" }),
+
+  generateGeneralBatch: (
+    generalLinkIds: string[],
+  ): Promise<{ queued: { general_link_id: string; general_link_website_id: string; status: string }[] }> =>
+    request("/general-sites/generate/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ general_link_ids: generalLinkIds }),
+    }),
+
+  getGeneralBatchStatus: (ids: string[]): Promise<GeneralBatchStatusItem[]> =>
+    request(`/general-sites/generate/batch/status?ids=${ids.join(",")}`),
+
+  retryGeneralGeneration: (glwId: string): Promise<{ status: string; general_link_website_id: string }> =>
+    request(`/general-sites/generate/${glwId}/retry`, { method: "POST" }),
+
+  previewGeneralHtmlUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/preview`,
+
+  deployGeneralLink: (glwId: string): Promise<{ status: string; general_link_website_id: string }> =>
+    request(`/general-sites/generate/${glwId}/deploy`, { method: "POST" }),
+
+  cancelGeneralRun: (glwId: string): Promise<{ cancelled: boolean }> =>
+    request(`/general-sites/generate/${glwId}/cancel`, { method: "POST" }),
+
+  generalAssetsUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/assets`,
+
+  generalUploadAssetUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/upload-asset`,
+
+  generalAssetBaseUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/asset`,
+
+  generalHtmlUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/html`,
+
+  saveGeneralHtml: (glwId: string, html: string): Promise<{ saved: boolean }> =>
+    request(`/general-sites/generate/${glwId}/html`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html }),
+    }),
+
+  generalChatEditUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/chat-edit`,
+
+  generalUndoUrl: (glwId: string): string =>
+    `${BASE}/general-sites/generate/${glwId}/undo`,
+
+  uploadGeneralAsset: (glwId: string, file: File): Promise<{ filename: string; size: number }> => {
+    const form = new FormData();
+    form.append("file", file);
+    return request(`/general-sites/generate/${glwId}/upload-asset`, { method: "POST", body: form });
+  },
+
+  setGeneralUrl: (glwId: string, url: string): Promise<{ status: string; netlify_url: string }> =>
+    request(`/general-sites/generate/${glwId}/set-url`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),

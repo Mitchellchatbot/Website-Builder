@@ -128,8 +128,9 @@ function Sidebar() {
       >
         <SidebarLink to="/dashboard"    icon="📊" label="Dashboard" />
         <SidebarLink to="/leads"        icon="🎯" label="Leads" end />
-        <SidebarLink to="/custom-links" icon="🔗" label="Custom Links" />
-        <SidebarLink to="/websites"     icon="🌐" label="Websites" />
+        <SidebarLink to="/custom-links"  icon="🔗" label="Custom Links" />
+        <SidebarLink to="/general-sites" icon="🌐" label="General Sites" />
+        <SidebarLink to="/websites"      icon="🗂" label="Websites" />
         <SidebarLink to="/active"       icon="⚡" label="Active Runs" />
         <SidebarLink to="/history"      icon="📋" label="History" />
       </nav>

@@ -46,6 +46,22 @@ def cancel_lead_run(lw_id: str) -> None:
             pass
 
 
+# ── Cancellation state for general-site pipelines ─────────────────────────────
+_general_cancel_flags: set[str] = set()
+_general_active_procs: dict[str, subprocess.Popen] = {}
+
+
+def cancel_general_run(glw_id: str) -> None:
+    """Signal cancellation for a general-site pipeline run. Kills the scraper if active."""
+    _general_cancel_flags.add(glw_id)
+    proc = _general_active_procs.get(glw_id)
+    if proc is not None:
+        try:
+            proc.terminate()
+        except OSError:
+            pass
+
+
 def _slugify(name: str) -> str:
     s = name.lower()
     s = re.sub(r"[^a-z0-9]+", "-", s)
@@ -356,5 +372,154 @@ def run_custom_pipeline(
         if _is_cancelled():
             return _finish_cancel()
         logger.exception("[custom:%s] Pipeline failed: %s", custom_link_id, exc)
+        _update({"status": "failed", "error": str(exc)})
+        raise
+
+
+def run_general_pipeline(
+    general_link_id: str,
+    general_link_website_id: str,
+    resume_from: str = "scrape",
+) -> dict:
+    """
+    Three-stage pipeline for general (non-behavioral-health) sites:
+    scrape → generate (niche-agnostic) → (await approval) → deploy.
+
+    Mirrors run_custom_pipeline but uses the general_html_generator module and
+    the general_link_websites / general_links tables.
+    """
+    db = get_client()
+
+    result = db.table("general_links").select(
+        "id, url, label"
+    ).eq("id", general_link_id).limit(1).execute()
+
+    if not result.data:
+        raise ValueError(f"General link {general_link_id} not found")
+
+    gl = result.data[0]
+    website_url = gl.get("url")
+    label = gl.get("label") or website_url
+
+    if not website_url and resume_from == "scrape":
+        raise ValueError("General link has no URL")
+
+    output_folder = OUTPUT_DIR / f"general_{general_link_id}"
+    output_folder.mkdir(parents=True, exist_ok=True)
+
+    data_path = output_folder / "data.json"
+    html_path = output_folder / "index.html"
+    netlify_url: str = ""
+
+    def _is_cancelled() -> bool:
+        return general_link_website_id in _general_cancel_flags
+
+    def _update(fields: dict) -> None:
+        if not _is_cancelled():
+            db.table("general_link_websites").update(fields).eq("id", general_link_website_id).execute()
+
+    def _finish_cancel() -> dict:
+        _general_cancel_flags.discard(general_link_website_id)
+        logger.info("[general:%s] Cancelled by user", general_link_id)
+        return {"status": "cancelled"}
+
+    try:
+        # ── Stage 1: Scrape ────────────────────────────────────────────────────
+        if resume_from == "scrape":
+            if _is_cancelled():
+                return _finish_cancel()
+
+            logger.info("[general:%s] Scraping %s", general_link_id, website_url)
+            _update({"status": "scraping"})
+
+            run_scraper_script = Path(__file__).parent.parent / "run_scraper.py"
+            cmd = [sys.executable, str(run_scraper_script), website_url, str(output_folder), label or ""]
+            proc = subprocess.Popen(
+                cmd,
+                cwd=str(Path(__file__).parent.parent),
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            _general_active_procs[general_link_website_id] = proc
+            try:
+                try:
+                    _, stderr_text = proc.communicate(timeout=300)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.communicate()
+                    raise RuntimeError("Scraper timed out after 300s")
+            finally:
+                _general_active_procs.pop(general_link_website_id, None)
+
+            if _is_cancelled():
+                return _finish_cancel()
+
+            if proc.returncode != 0:
+                stderr_text = (stderr_text or "").strip()
+                err_msg = stderr_text
+                for line in stderr_text.splitlines():
+                    if "[run_scraper] FAILED:" in line:
+                        err_msg = line.split("[run_scraper] FAILED:", 1)[1].strip()
+                        break
+                raise RuntimeError(err_msg or f"Scraper exited with code {proc.returncode}")
+
+            if not data_path.exists():
+                raise RuntimeError("Scraper finished but data.json was not created")
+
+            _update({"status": "scraping", "scraped_data_path": str(data_path)})
+
+        # ── Stage 2: Generate HTML (general/niche-agnostic generator) ─────────
+        if resume_from in ("scrape", "generate"):
+            if _is_cancelled():
+                return _finish_cancel()
+
+            logger.info("[general:%s] Generating HTML", general_link_id)
+            _update({"status": "generating"})
+
+            if not data_path.exists():
+                raise RuntimeError(f"data.json not found at {data_path}")
+
+            from pipeline.general_html_generator import generate_html
+            html_path = generate_html(data_path, output_folder)
+
+            if _is_cancelled():
+                return _finish_cancel()
+
+            _update({"status": "awaiting_approval", "generated_html_path": str(html_path)})
+            logger.info("[general:%s] HTML ready — awaiting approval", general_link_id)
+            return {"status": "awaiting_approval", "html_path": str(html_path)}
+
+        # ── Stage 3: Deploy (resume_from == "deploy" only) ────────────────────
+        if _is_cancelled():
+            return _finish_cancel()
+
+        logger.info("[general:%s] Deploying to Netlify", general_link_id)
+        _update({"status": "deploying"})
+
+        if not html_path.exists():
+            raise RuntimeError(f"index.html not found at {html_path}")
+
+        from pipeline.netlify_deployer import deploy_site
+        site_name = f"{_slugify(label)}-{general_link_id[:8]}"
+        netlify_url, netlify_deploy_id = deploy_site(output_folder, site_name)
+
+        if _is_cancelled():
+            return _finish_cancel()
+
+        now = datetime.now(timezone.utc).isoformat()
+        _update({
+            "status": "completed",
+            "netlify_url": netlify_url,
+            "netlify_deploy_id": netlify_deploy_id or None,
+            "completed_at": now,
+        })
+
+        logger.info("[general:%s] Pipeline complete: %s", general_link_id, netlify_url)
+        return {"status": "completed", "netlify_url": netlify_url}
+
+    except Exception as exc:
+        if _is_cancelled():
+            return _finish_cancel()
+        logger.exception("[general:%s] Pipeline failed: %s", general_link_id, exc)
         _update({"status": "failed", "error": str(exc)})
         raise

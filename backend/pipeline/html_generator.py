@@ -30,7 +30,7 @@ load_dotenv()
 # ─────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────
-MODEL          = "claude-opus-4-5"   # Vision-capable, highest quality
+MODEL          = "claude-sonnet-4-6"
 MAX_TOKENS     = 64000               # 64k output tokens for rich, complete pages
 MAX_IMAGES         = 15              # Cap at 15 images — logo+facilities is enough for brand matching
 MAX_PAYLOAD_BYTES  = 8 * 1024 * 1024 # 8 MB raw cap → ~11 MB base64, well under API limit
@@ -650,13 +650,14 @@ def generate_website(lead_folder: str | Path) -> Path:
     if not api_key:
         raise ValueError("CLAUDE_API_KEY not found in .env file")
 
-    client = anthropic.Anthropic(api_key=api_key)
+    # max_retries=0 disables the SDK's own retry loop so we control waits ourselves
+    client = anthropic.Anthropic(api_key=api_key, max_retries=0)
 
-    MAX_RETRIES = 2
+    MAX_RETRIES = 4
     response = None
     for attempt in range(MAX_RETRIES + 1):
         try:
-            print(f"🤖 Sending to Claude ({MODEL})..." + (f" (attempt {attempt + 1})" if attempt else ""))
+            print(f"🤖 Sending to Claude ({MODEL})..." + (f" (attempt {attempt + 1}/{MAX_RETRIES + 1})" if attempt else ""))
             response = client.messages.create(
                 model=MODEL,
                 max_tokens=MAX_TOKENS,
@@ -665,20 +666,30 @@ def generate_website(lead_folder: str | Path) -> Path:
                 messages=[{"role": "user", "content": user_content}],
             )
             break
-        except anthropic.RequestTooLargeError:
-            raise  # 413 is not retryable — payload needs to be reduced
+        except anthropic.APIStatusError as e:
+            if e.status_code == 413:
+                raise  # payload too large — retrying won't help
+            if attempt == MAX_RETRIES:
+                raise
+            # 529 = API overloaded; 529/529-class errors need a long backoff
+            if e.status_code in (529, 503):
+                wait = 60
+                print(f"   ⚠  API overloaded (attempt {attempt + 1}/{MAX_RETRIES + 1}), waiting {wait}s...")
+            else:
+                wait = 2 ** attempt
+                print(f"   ⚠  API error {e.status_code} (attempt {attempt + 1}/{MAX_RETRIES + 1}), retrying in {wait}s...")
+            time.sleep(wait)
+        except anthropic.RateLimitError:
+            if attempt == MAX_RETRIES:
+                raise
+            print(f"   ⚠  Rate limited (attempt {attempt + 1}/{MAX_RETRIES + 1}), waiting 60s...")
+            time.sleep(60)
         except (anthropic.APIConnectionError, anthropic.APITimeoutError) as e:
             if attempt == MAX_RETRIES:
                 raise
             wait = 2 ** attempt
-            print(f"   ⚠  Connection error (attempt {attempt + 1}/{MAX_RETRIES + 1}): {e}")
-            print(f"   Retrying in {wait}s...")
+            print(f"   ⚠  Connection error (attempt {attempt + 1}/{MAX_RETRIES + 1}), retrying in {wait}s...")
             time.sleep(wait)
-        except anthropic.RateLimitError as e:
-            if attempt == MAX_RETRIES:
-                raise
-            print(f"   ⚠  Rate limited, waiting 60s...")
-            time.sleep(60)
 
     print("✅ Generation complete")
 

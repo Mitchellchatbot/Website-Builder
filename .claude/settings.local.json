@@ -35,7 +35,10 @@
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"D:\\\\Video Recording\\\\backend\" -Name)",
       "Bash(Select-String -Pattern \"\\(app|main|server|run\\)\\\\.py$\")",
-      "Bash(python -m py_compile routes/custom_links.py routes/generate.py)"
+      "Bash(python -m py_compile routes/custom_links.py routes/generate.py)",
+      "Bash(python -c \"import ast; [ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\)\\) for f in ['pipeline/general_html_generator.py','routes/general_sites.py','services/pipeline.py','main.py']]; print\\('OK'\\)\")",
+      "Bash(python -m py_compile pipeline/html_generator.py)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('pipeline/general_html_generator.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Sofyan Abdullah\\.claude\\projects\\d--Video-Recording\\memory",
