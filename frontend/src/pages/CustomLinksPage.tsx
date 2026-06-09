@@ -3,7 +3,6 @@ import { api, type CustomLink } from "../api/client";
 import PreviewModal from "../components/PreviewModal";
 
 const ACTIVE_STATUSES   = new Set(["pending", "scraping", "generating", "deploying"]);
-const TERMINAL_STATUSES = new Set(["completed", "failed", "skipped", "cancelled"]);
 
 function statusColor(status: string | undefined): string {
   if (!status)                        return "#3a3a52";
@@ -53,7 +52,7 @@ export default function CustomLinksPage() {
   const [adding, setAdding]     = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const [, setGeneratingIds] = useState<Set<string>>(new Set());
   const [deployingIds, setDeployingIds]   = useState<Set<string>>(new Set());
   const [deletingIds, setDeletingIds]     = useState<Set<string>>(new Set());
   const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
@@ -462,7 +461,6 @@ export default function CustomLinksPage() {
                 const isFailed    = status === "failed";
                 const isCancelled = status === "cancelled";
                 const isCompleted = status === "completed";
-                const isBusy      = generatingIds.has(link.id) || deployingIds.has(link.id) || isActive;
                 const isCancelling = cancellingIds.has(link.id);
                 const isDeleting  = deletingIds.has(link.id);
                 const cancelledHasHtml = isCancelled && !!run?.generated_html_path;
