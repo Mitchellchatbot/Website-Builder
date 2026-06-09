@@ -4,13 +4,6 @@ import {
 } from "recharts";
 import { api, type DashboardStats } from "../api/client";
 
-function formatDuration(seconds: number | null): string {
-  if (seconds === null || seconds === undefined) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
 export default function DashboardPage() {
   const [stats,   setStats]   = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,10 +66,6 @@ export default function DashboardPage() {
               <KpiTile
                 label="Generated today"
                 value={stats.today.completed.toLocaleString()}
-              />
-              <KpiTile
-                label="Avg generation time"
-                value={formatDuration(stats.avg_duration_seconds)}
               />
             </div>
 

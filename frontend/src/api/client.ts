@@ -55,7 +55,6 @@ export interface ActiveRunsResponse {
 export interface DashboardStats {
   totals: { completed: number; failed: number; success_rate: number | null };
   today:  { completed: number; failed: number };
-  avg_duration_seconds: number | null;
   daily_counts: { date: string; completed: number; failed: number }[];
   top_failure_reasons: {
     error: string;

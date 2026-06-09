@@ -38,7 +38,8 @@
       "Bash(python -m py_compile routes/custom_links.py routes/generate.py)",
       "Bash(python -c \"import ast; [ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\)\\) for f in ['pipeline/general_html_generator.py','routes/general_sites.py','services/pipeline.py','main.py']]; print\\('OK'\\)\")",
       "Bash(python -m py_compile pipeline/html_generator.py)",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('pipeline/general_html_generator.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('pipeline/general_html_generator.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('routes/dashboard.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\Sofyan Abdullah\\.claude\\projects\\d--Video-Recording\\memory",
