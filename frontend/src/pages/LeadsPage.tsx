@@ -407,11 +407,14 @@ function LeadRow({
   onEdit: () => void;
   onSaved: (patch: Partial<Lead>) => void;
 }) {
-  const [hovered,  setHovered]  = useState(false);
-  const [website,  setWebsite]  = useState(lead.company_website_url ?? "");
-  const [demoUrl,  setDemoUrl]  = useState(lead.demo_url ?? "");
-  const [saving,   setSaving]   = useState(false);
-  const [saveErr,  setSaveErr]  = useState<string | null>(null);
+  const [hovered,       setHovered]       = useState(false);
+  const [website,       setWebsite]       = useState(lead.company_website_url ?? "");
+  const [demoUrl,       setDemoUrl]       = useState(lead.demo_url ?? "");
+  const [saving,        setSaving]        = useState(false);
+  const [saveErr,       setSaveErr]       = useState<string | null>(null);
+  const [settingDemo,   setSettingDemo]   = useState(false);
+  const [quickDemoUrl,  setQuickDemoUrl]  = useState(lead.demo_url ?? "");
+  const [quickSaving,   setQuickSaving]   = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -433,12 +436,30 @@ function LeadRow({
     }
   };
 
-  const rowBorder = isLast && !isEditing ? "none" : "1px solid rgba(255,255,255,0.05)";
+  const handleQuickSaveDemo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuickSaving(true);
+    try {
+      await api.updateLead(lead.id, { demo_site_url: quickDemoUrl.trim() || null });
+      onSaved({ has_demo: !!quickDemoUrl.trim(), demo_url: quickDemoUrl.trim() || null });
+      setSettingDemo(false);
+    } catch {
+      // silently ignore — user can retry
+    } finally {
+      setQuickSaving(false);
+    }
+  };
+
+  const rowBorder = isLast && !isEditing && !settingDemo ? "none" : "1px solid rgba(255,255,255,0.05)";
   const rowBg = isSelected
     ? "rgba(124,58,237,0.12)"
     : hovered
     ? "rgba(255,255,255,0.03)"
     : "transparent";
+
+  const demoHref = lead.demo_url
+    ? (/^https?:\/\//i.test(lead.demo_url) ? lead.demo_url : `https://${lead.demo_url}`)
+    : null;
 
   return (
     <>
@@ -474,16 +495,54 @@ function LeadRow({
             <span style={{ color: "#3a3a50" }}>—</span>
           )}
         </td>
-        <td style={{ padding: "13px 16px" }}>
-          {lead.has_demo ? (
-            <span className="badge" style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", borderColor: "rgba(74,222,128,0.25)" }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
-              Demo ready
-            </span>
-          ) : (
-            <span style={{ fontSize: 12, color: "#3a3a50" }}>No demo</span>
-          )}
+
+        {/* Status + demo actions */}
+        <td style={{ padding: "13px 16px" }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+            {lead.has_demo && demoHref ? (
+              <>
+                <a
+                  href={demoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    padding: "3px 9px", borderRadius: 5,
+                    background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)",
+                    color: "#4ade80", fontSize: 12, fontWeight: 600, textDecoration: "none",
+                    transition: "background 150ms",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(74,222,128,0.2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(74,222,128,0.12)")}
+                >
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", display: "inline-block", flexShrink: 0 }} />
+                  View Demo ↗
+                </a>
+                <button
+                  onClick={() => { setQuickDemoUrl(lead.demo_url ?? ""); setSettingDemo(true); }}
+                  title="Change demo URL"
+                  style={{ background: "none", border: "none", color: "#5a5a72", cursor: "pointer", fontSize: 12, padding: "2px 4px", lineHeight: 1 }}
+                >
+                  ✎
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => { setQuickDemoUrl(""); setSettingDemo(true); }}
+                style={{
+                  padding: "3px 10px", borderRadius: 5, fontSize: 12, fontWeight: 600,
+                  background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.3)",
+                  color: "#a78bfa", cursor: "pointer", transition: "background 150ms",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(124,58,237,0.22)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(124,58,237,0.12)")}
+              >
+                + Set Demo URL
+              </button>
+            )}
+          </div>
         </td>
+
         <td style={{ padding: "13px 8px", width: 36 }} onClick={(e) => e.stopPropagation()}>
           <button
             onClick={onEdit}
@@ -507,6 +566,35 @@ function LeadRow({
         </td>
       </tr>
 
+      {/* Quick demo URL setter */}
+      {settingDemo && !isEditing && (
+        <tr style={{ borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)", background: "rgba(124,58,237,0.04)" }}>
+          <td colSpan={6} style={{ padding: "8px 16px 12px 48px" }}>
+            <form onSubmit={handleQuickSaveDemo} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, color: "#5a5a72", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
+                Demo URL
+              </span>
+              <input
+                autoFocus
+                type="url"
+                value={quickDemoUrl}
+                onChange={(e) => setQuickDemoUrl(e.target.value)}
+                placeholder="https://your-site.netlify.app"
+                style={{ ...editFieldStyle, flex: 1, maxWidth: 380 }}
+              />
+              <button type="submit" disabled={quickSaving}
+                style={{ padding: "5px 14px", borderRadius: 5, background: "rgba(124,58,237,0.2)", border: "1px solid rgba(124,58,237,0.4)", color: "#a78bfa", fontSize: 12, fontWeight: 600, cursor: quickSaving ? "not-allowed" : "pointer", opacity: quickSaving ? 0.6 : 1 }}>
+                {quickSaving ? "Saving…" : "Save"}
+              </button>
+              <button type="button" onClick={() => setSettingDemo(false)}
+                style={{ padding: "5px 10px", borderRadius: 5, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#5a5a72", fontSize: 12, cursor: "pointer" }}>
+                Cancel
+              </button>
+            </form>
+          </td>
+        </tr>
+      )}
+
       {isEditing && (
         <tr style={{ borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)", background: "rgba(124,58,237,0.05)" }}>
           <td colSpan={6} style={{ padding: "0 16px 14px 48px" }}>
@@ -526,7 +614,7 @@ function LeadRow({
                 </label>
                 <label style={{ flex: 1, minWidth: 200 }}>
                   <span style={{ display: "block", fontSize: 10.5, color: "#5a5a72", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-                    Netlify Demo URL
+                    Demo Site URL
                   </span>
                   <input
                     type="url"
@@ -697,21 +785,28 @@ function ImportedFilterChips({ value, onChange }: { value: ImportedFilter; onCha
 }
 
 function ExportButton({ leads, disabled }: { leads: Lead[]; disabled: boolean }) {
+  // Only export leads that have a demo URL; sort by demo generated date desc
+  const exportable = leads
+    .filter((l) => l.has_demo && l.demo_url)
+    .sort((a, b) => {
+      const ta = a.demo_generated_at ? new Date(a.demo_generated_at).getTime() : 0;
+      const tb = b.demo_generated_at ? new Date(b.demo_generated_at).getTime() : 0;
+      return tb - ta;
+    });
+
+  const isDisabled = disabled || exportable.length === 0;
+
   const handleClick = () => {
-    if (disabled) return;
+    if (isDisabled) return;
 
     const rows = [
-      ["Lead ID", "First Name", "Last Name", "Company Email", "Company Name", "Website", "Demo Site URL", "Generated At", "Imported At"],
-      ...leads.map((l) => [
-        l.id,
+      ["First Name", "Last Name", "Email", "Demo Site URL", "Demo Generated At"],
+      ...exportable.map((l) => [
         l.first_name,
         l.last_name,
         l.email,
-        l.company_name ?? "",
-        l.company_website_url ?? "",
         l.demo_url ?? "",
         l.demo_generated_at ? l.demo_generated_at.slice(0, 10) : "",
-        l.imported_at ? l.imported_at.slice(0, 10) : "",
       ]),
     ];
 
@@ -723,7 +818,7 @@ function ExportButton({ leads, disabled }: { leads: Lead[]; disabled: boolean })
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `demo-sites-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -731,26 +826,27 @@ function ExportButton({ leads, disabled }: { leads: Lead[]; disabled: boolean })
   return (
     <button
       onClick={handleClick}
-      disabled={disabled}
-      title={disabled ? "No leads to export" : `Export ${leads.length} lead${leads.length !== 1 ? "s" : ""} as CSV`}
+      disabled={isDisabled}
+      title={isDisabled ? "No leads with demo sites in current view" : `Export ${exportable.length} lead${exportable.length !== 1 ? "s" : ""} with demo sites`}
       style={{
         padding: "5px 12px",
         borderRadius: 6,
-        border: "1px solid rgba(255,255,255,0.1)",
-        background: "transparent",
-        color: disabled ? "#3a3a50" : "#9090a8",
+        border: `1px solid ${isDisabled ? "rgba(255,255,255,0.06)" : "rgba(74,222,128,0.3)"}`,
+        background: isDisabled ? "transparent" : "rgba(74,222,128,0.08)",
+        color: isDisabled ? "#3a3a50" : "#4ade80",
         fontSize: 12,
-        cursor: disabled ? "not-allowed" : "pointer",
+        fontWeight: 600,
+        cursor: isDisabled ? "not-allowed" : "pointer",
         display: "flex",
         alignItems: "center",
         gap: 5,
-        transition: "color 150ms ease",
+        transition: "all 150ms ease",
         whiteSpace: "nowrap",
       }}
-      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.color = "#f0f0f8"; }}
-      onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.color = "#9090a8"; }}
+      onMouseEnter={(e) => { if (!isDisabled) e.currentTarget.style.background = "rgba(74,222,128,0.15)"; }}
+      onMouseLeave={(e) => { if (!isDisabled) e.currentTarget.style.background = "rgba(74,222,128,0.08)"; }}
     >
-      ↓ Export CSV
+      ↓ Export Demo Sites {!isDisabled && `(${exportable.length})`}
     </button>
   );
 }

@@ -127,9 +127,11 @@ function Sidebar() {
         }}
       >
         <SidebarLink to="/dashboard"    icon="📊" label="Dashboard" />
-        <SidebarLink to="/leads"        icon="🎯" label="Leads" end />
+        <SidebarLink to="/leads"          icon="🎯" label="Leads" end />
+        <SidebarLink to="/lead-websites" icon="🌐" label="Lead Websites" />
         <SidebarLink to="/custom-links"  icon="🔗" label="Custom Links" />
         <SidebarLink to="/general-sites" icon="🌐" label="General Sites" />
+        <SidebarLink to="/sheets-builder" icon="📊" label="Sheets Builder" />
         <SidebarLink to="/websites"      icon="🗂" label="Websites" />
         <SidebarLink to="/active"       icon="⚡" label="Active Runs" />
         <SidebarLink to="/history"      icon="📋" label="History" />

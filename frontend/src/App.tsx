@@ -9,6 +9,8 @@ import DashboardPage from "./pages/DashboardPage";
 import CustomLinksPage from "./pages/CustomLinksPage";
 import WebsitesPage from "./pages/WebsitesPage";
 import GeneralSitesPage from "./pages/GeneralSitesPage";
+import SheetsBuilderPage from "./pages/SheetsBuilderPage";
+import LeadWebsitesPage from "./pages/LeadWebsitesPage";
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
           <Route path="/custom-links" element={<CustomLinksPage />} />
           <Route path="/websites" element={<WebsitesPage />} />
           <Route path="/general-sites" element={<GeneralSitesPage />} />
+          <Route path="/sheets-builder" element={<SheetsBuilderPage />} />
+          <Route path="/lead-websites" element={<LeadWebsitesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

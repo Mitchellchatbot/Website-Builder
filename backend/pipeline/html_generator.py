@@ -30,7 +30,7 @@ load_dotenv()
 # ─────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────
-MODEL          = "claude-sonnet-4-6"
+MODEL          = "claude-opus-4-8"
 MAX_TOKENS     = 64000               # 64k output tokens for rich, complete pages
 MAX_IMAGES         = 15              # Cap at 15 images — logo+facilities is enough for brand matching
 MAX_PAYLOAD_BYTES  = 8 * 1024 * 1024 # 8 MB raw cap → ~11 MB base64, well under API limit

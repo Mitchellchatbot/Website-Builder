@@ -523,3 +523,174 @@ def run_general_pipeline(
         logger.exception("[general:%s] Pipeline failed: %s", general_link_id, exc)
         _update({"status": "failed", "error": str(exc)})
         raise
+
+
+# ── Cancellation state for sheets pipelines ───────────────────────────────────
+_sheets_cancel_flags: set[str] = set()
+_sheets_active_procs: dict[str, subprocess.Popen] = {}
+
+
+def cancel_sheets_run(ewid: str) -> None:
+    """Signal cancellation for a sheets pipeline run. Kills the scraper if active."""
+    _sheets_cancel_flags.add(ewid)
+    proc = _sheets_active_procs.get(ewid)
+    if proc is not None:
+        try:
+            proc.terminate()
+        except OSError:
+            pass
+
+
+def run_sheets_pipeline(
+    entry_id: str,
+    entry_website_id: str,
+    resume_from: str = "scrape",
+) -> dict:
+    """
+    Pipeline for sheets builder entries.
+
+    Entries WITH a website URL: scrape → general_html_generator → deploy.
+    Entries WITHOUT a website URL: no_website_html_generator → deploy (no scrape).
+
+    Stops at 'awaiting_approval' after HTML generation so the user can review
+    before deploying.  Stage 3 (deploy) only runs with resume_from='deploy'.
+    """
+    db = get_client()
+
+    result = db.table("sheets_entries").select("*").eq("id", entry_id).limit(1).execute()
+    if not result.data:
+        raise ValueError(f"Sheets entry {entry_id} not found")
+
+    entry = result.data[0]
+    has_website = bool(entry.get("website_url"))
+    website_url = entry.get("website_url")
+    business_name = entry.get("business_name") or entry.get("business_description") or entry_id
+    label = business_name
+
+    output_folder = OUTPUT_DIR / f"sheets_{entry_id}"
+    output_folder.mkdir(parents=True, exist_ok=True)
+
+    data_path = output_folder / "data.json"
+    html_path = output_folder / "index.html"
+    netlify_url: str = ""
+
+    def _is_cancelled() -> bool:
+        return entry_website_id in _sheets_cancel_flags
+
+    def _update(fields: dict) -> None:
+        if not _is_cancelled():
+            db.table("sheets_entry_websites").update(fields).eq("id", entry_website_id).execute()
+
+    def _finish_cancel() -> dict:
+        _sheets_cancel_flags.discard(entry_website_id)
+        logger.info("[sheets:%s] Cancelled by user", entry_id)
+        return {"status": "cancelled"}
+
+    try:
+        # ── Stage 1: Scrape (only when entry has a website URL) ────────────────
+        if has_website and resume_from == "scrape":
+            if _is_cancelled():
+                return _finish_cancel()
+
+            logger.info("[sheets:%s] Scraping %s", entry_id, website_url)
+            _update({"status": "scraping"})
+
+            run_scraper_script = Path(__file__).parent.parent / "run_scraper.py"
+            cmd = [sys.executable, str(run_scraper_script), website_url, str(output_folder), label or ""]
+            proc = subprocess.Popen(
+                cmd,
+                cwd=str(Path(__file__).parent.parent),
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            _sheets_active_procs[entry_website_id] = proc
+            try:
+                try:
+                    _, stderr_text = proc.communicate(timeout=300)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.communicate()
+                    raise RuntimeError("Scraper timed out after 300s")
+            finally:
+                _sheets_active_procs.pop(entry_website_id, None)
+
+            if _is_cancelled():
+                return _finish_cancel()
+
+            if proc.returncode != 0:
+                stderr_text = (stderr_text or "").strip()
+                err_msg = stderr_text
+                for line in stderr_text.splitlines():
+                    if "[run_scraper] FAILED:" in line:
+                        err_msg = line.split("[run_scraper] FAILED:", 1)[1].strip()
+                        break
+                raise RuntimeError(err_msg or f"Scraper exited with code {proc.returncode}")
+
+            if not data_path.exists():
+                raise RuntimeError("Scraper finished but data.json was not created")
+
+            _update({"status": "scraping", "scraped_data_path": str(data_path)})
+
+        # ── Stage 2: Generate HTML ─────────────────────────────────────────────
+        if resume_from in ("scrape", "generate"):
+            if _is_cancelled():
+                return _finish_cancel()
+
+            logger.info("[sheets:%s] Generating HTML (has_website=%s)", entry_id, has_website)
+            _update({"status": "generating"})
+
+            if has_website:
+                if not data_path.exists():
+                    raise RuntimeError(f"data.json not found at {data_path}")
+                from pipeline.general_html_generator import generate_html
+                html_path = generate_html(data_path, output_folder)
+            else:
+                from pipeline.no_website_html_generator import generate_html_from_info
+                html_path = generate_html_from_info(
+                    business_name=entry.get("business_name"),
+                    design_preferences=entry.get("design_preferences"),
+                    business_description=entry.get("business_description"),
+                    output_folder=output_folder,
+                )
+
+            if _is_cancelled():
+                return _finish_cancel()
+
+            _update({"status": "awaiting_approval", "generated_html_path": str(html_path)})
+            logger.info("[sheets:%s] HTML ready — awaiting approval", entry_id)
+            return {"status": "awaiting_approval", "html_path": str(html_path)}
+
+        # ── Stage 3: Deploy (resume_from == "deploy" only) ────────────────────
+        if _is_cancelled():
+            return _finish_cancel()
+
+        logger.info("[sheets:%s] Deploying to Netlify", entry_id)
+        _update({"status": "deploying"})
+
+        if not html_path.exists():
+            raise RuntimeError(f"index.html not found at {html_path}")
+
+        from pipeline.netlify_deployer import deploy_site
+        site_name = f"{_slugify(label)}-{entry_id[:8]}"
+        netlify_url, netlify_deploy_id = deploy_site(output_folder, site_name)
+
+        if _is_cancelled():
+            return _finish_cancel()
+
+        now = datetime.now(timezone.utc).isoformat()
+        _update({
+            "status": "completed",
+            "netlify_url": netlify_url,
+            "netlify_deploy_id": netlify_deploy_id or None,
+            "completed_at": now,
+        })
+
+        logger.info("[sheets:%s] Pipeline complete: %s", entry_id, netlify_url)
+        return {"status": "completed", "netlify_url": netlify_url}
+
+    except Exception as exc:
+        if _is_cancelled():
+            return _finish_cancel()
+        logger.exception("[sheets:%s] Pipeline failed: %s", entry_id, exc)
+        _update({"status": "failed", "error": str(exc)})
+        raise

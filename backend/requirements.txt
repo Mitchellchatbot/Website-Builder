@@ -10,3 +10,4 @@ lxml
 playwright
 pydantic
 Pillow
+google-auth

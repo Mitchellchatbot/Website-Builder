@@ -121,7 +121,11 @@ export interface HistoryItem {
   completed_at: string | null;
   generated_html_path: string | null;
   lead_name: string;
+  lead_first_name: string;
+  lead_last_name: string;
+  lead_email: string;
   company_name: string;
+  lead_demo_url: string | null;
 }
 
 export interface HistoryResponse {
@@ -206,6 +210,52 @@ export interface GeneralBatchStatusItem {
   error: string | null;
   label: string;
   url: string;
+}
+
+export interface SheetsImport {
+  id: string;
+  sheets_url: string;
+  label: string | null;
+  entry_count: number;
+  created_at: string;
+}
+
+export interface SheetsEntryRun {
+  id: string;
+  entry_id: string;
+  has_website: boolean;
+  status: string;
+  netlify_url: string | null;
+  error: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  generated_html_path: string | null;
+}
+
+export interface SheetsEntry {
+  id: string;
+  import_id: string;
+  business_name: string | null;
+  website_url: string | null;
+  design_preferences: string | null;
+  business_description: string | null;
+  row_index: number;
+  latest_run: SheetsEntryRun | null;
+}
+
+export interface SheetsImportResponse {
+  import: SheetsImport;
+  entries: SheetsEntry[];
+}
+
+export interface SheetsBatchStatusItem {
+  id: string;
+  entry_id: string;
+  has_website: boolean;
+  status: string;
+  netlify_url: string | null;
+  error: string | null;
+  label: string;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -497,6 +547,86 @@ export const api = {
 
   setGeneralUrl: (glwId: string, url: string): Promise<{ status: string; netlify_url: string }> =>
     request(`/general-sites/generate/${glwId}/set-url`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }),
+
+  // ── Sheets Builder ─────────────────────────────────────────────────────────
+
+  syncSheet: (): Promise<{
+    added: number; updated: number; total: number; entries: SheetsEntry[];
+  }> =>
+    request("/sheets-builder/sync", { method: "POST" }),
+
+  getSheetsEntries: (): Promise<{ entries: SheetsEntry[]; total: number }> =>
+    request("/sheets-builder/entries"),
+
+  generateForSheetsEntry: (
+    entryId: string,
+  ): Promise<{ entry_website_id: string; status: string }> =>
+    request(`/sheets-builder/entries/${entryId}/generate`, { method: "POST" }),
+
+  generateSheetsBatch: (
+    entryIds: string[],
+  ): Promise<{ queued: { entry_id: string; entry_website_id: string; status: string }[] }> =>
+    request("/sheets-builder/generate/batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entry_ids: entryIds }),
+    }),
+
+  getSheetsBatchStatus: (ids: string[]): Promise<SheetsBatchStatusItem[]> =>
+    request(`/sheets-builder/generate/batch/status?ids=${ids.join(",")}`),
+
+  getSheetsGenerationStatus: (ewId: string): Promise<SheetsEntryRun> =>
+    request(`/sheets-builder/generate/${ewId}`),
+
+  retrySheetsGeneration: (ewId: string): Promise<{ status: string; entry_website_id: string }> =>
+    request(`/sheets-builder/generate/${ewId}/retry`, { method: "POST" }),
+
+  cancelSheetsRun: (ewId: string): Promise<{ cancelled: boolean }> =>
+    request(`/sheets-builder/generate/${ewId}/cancel`, { method: "POST" }),
+
+  deploySheetsEntry: (ewId: string): Promise<{ status: string; entry_website_id: string }> =>
+    request(`/sheets-builder/generate/${ewId}/deploy`, { method: "POST" }),
+
+  previewSheetsHtmlUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/preview`,
+
+  sheetsAssetsUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/assets`,
+
+  sheetsAssetBaseUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/asset`,
+
+  sheetsUploadAssetUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/upload-asset`,
+
+  sheetsHtmlUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/html`,
+
+  saveSheetsHtml: (ewId: string, html: string): Promise<{ saved: boolean }> =>
+    request(`/sheets-builder/generate/${ewId}/html`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html }),
+    }),
+
+  sheetsChatEditUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/chat-edit`,
+
+  sheetsUndoUrl: (ewId: string): string =>
+    `${BASE}/sheets-builder/generate/${ewId}/undo`,
+
+  uploadSheetsAsset: (ewId: string, file: File): Promise<{ filename: string; size: number }> => {
+    const form = new FormData();
+    form.append("file", file);
+    return request(`/sheets-builder/generate/${ewId}/upload-asset`, { method: "POST", body: form });
+  },
+
+  setSheetsUrl: (ewId: string, url: string): Promise<{ status: string; netlify_url: string }> =>
+    request(`/sheets-builder/generate/${ewId}/set-url`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url }),

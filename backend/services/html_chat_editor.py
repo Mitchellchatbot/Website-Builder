@@ -31,7 +31,7 @@ def rewrite_asset_urls(html: str) -> str:
     Netlify deployer ships. Safe to run on any HTML — non-matching content is untouched."""
     return _ASSET_URL_RE.sub(lambda m: f"images/{m.group(1)}", html)
 
-MODEL = "claude-opus-4-5"
+MODEL = "claude-opus-4-8"
 MAX_TOKENS = 64000
 
 SYSTEM_PROMPT = """You are a precision HTML editor. The user has a working single-page website and wants to make ONE specific change.
