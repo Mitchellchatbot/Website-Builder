@@ -41,7 +41,7 @@ def _run_batch(pairs: list[tuple[str, str]], resume_from: str = "scrape") -> Non
     KNOWN LIMITATION: If uvicorn restarts while this is running, in-flight rows
     are stranded with their last status and no auto-recovery occurs.
     """
-    concurrency = int(os.getenv("PIPELINE_CONCURRENCY", "3"))
+    concurrency = int(os.getenv("PIPELINE_CONCURRENCY", "6"))
     total = len(pairs)
 
     lock = threading.Lock()
