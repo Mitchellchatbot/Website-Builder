@@ -17,10 +17,12 @@ export default function LeadsPage() {
   const [loading,     setLoading]     = useState(true);
   const [fetchError,  setFetchError]  = useState<string | null>(null);
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
-  const [editingId,   setEditingId]   = useState<string | null>(null);
-  const [submitting,  setSubmitting]  = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [query,       setQuery]       = useState("");
+  const [editingId,    setEditingId]    = useState<string | null>(null);
+  const [submitting,   setSubmitting]   = useState(false);
+  const [submitError,  setSubmitError]  = useState<string | null>(null);
+  const [query,        setQuery]        = useState("");
+  const [syncing,      setSyncing]      = useState(false);
+  const [syncResult,   setSyncResult]   = useState<string | null>(null);
 
   const fetchLeads = useCallback(() => {
     setLoading(true);
@@ -109,6 +111,25 @@ export default function LeadsPage() {
     }
   };
 
+  const handleSyncDemos = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const result = await api.syncDemos();
+      setSyncResult(
+        result.synced > 0
+          ? `Synced ${result.synced} lead${result.synced !== 1 ? "s" : ""} with existing demo URLs`
+          : result.message ?? "All leads are already in sync"
+      );
+      fetchLeads();
+    } catch (e: unknown) {
+      setSyncResult(`Error: ${e instanceof Error ? e.message : "Sync failed"}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="page-enter" style={{ minHeight: "100vh", padding: "36px 32px" }}>
       {/* Page header */}
@@ -166,6 +187,30 @@ export default function LeadsPage() {
           </div>
         )}
 
+        {/* Sync result banner */}
+        {syncResult && (
+          <div
+            style={{
+              background: syncResult.startsWith("Error")
+                ? "rgba(239,68,68,0.08)"
+                : "rgba(74,222,128,0.08)",
+              border: `1px solid ${syncResult.startsWith("Error") ? "rgba(248,113,113,0.25)" : "rgba(74,222,128,0.25)"}`,
+              borderRadius: 10,
+              padding: "10px 16px",
+              marginBottom: 16,
+              color: syncResult.startsWith("Error") ? "#f87171" : "#4ade80",
+              fontSize: 13,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
+            <span>{syncResult.startsWith("Error") ? "⚠️" : "✓"} {syncResult}</span>
+            <button onClick={() => setSyncResult(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", opacity: 0.6, fontSize: 14 }}>✕</button>
+          </div>
+        )}
+
         {/* Controls row */}
         <div style={{ marginBottom: 16 }}>
           {/* Row 1: generate button + search + demo filter + export */}
@@ -184,6 +229,31 @@ export default function LeadsPage() {
                 ) : (
                   <>⚡ Generate selected</>
                 )}
+              </button>
+
+              <button
+                onClick={handleSyncDemos}
+                disabled={syncing}
+                title="Copy demo URLs to all leads that share the same company website"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "6px 14px",
+                  borderRadius: 6,
+                  border: "1px solid rgba(96,165,250,0.3)",
+                  background: syncing ? "rgba(96,165,250,0.05)" : "rgba(96,165,250,0.08)",
+                  color: syncing ? "#5a5a72" : "#93c5fd",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: syncing ? "not-allowed" : "pointer",
+                  transition: "all 150ms ease",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => { if (!syncing) e.currentTarget.style.background = "rgba(96,165,250,0.15)"; }}
+                onMouseLeave={(e) => { if (!syncing) e.currentTarget.style.background = "rgba(96,165,250,0.08)"; }}
+              >
+                {syncing ? <><Spinner size={12} />Syncing…</> : <>↻ Resync Demos</>}
               </button>
 
               {/* Search */}

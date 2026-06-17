@@ -290,6 +290,9 @@ export const api = {
       body: JSON.stringify(patch),
     }),
 
+  syncDemos: (): Promise<{ synced: number; message?: string }> =>
+    request("/leads/sync-demos", { method: "POST" }),
+
   exportLeadsUrl: (
     demoFilter: DemoFilter,
     dateRange:  DateRange  = "all",

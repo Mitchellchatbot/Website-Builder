@@ -8,6 +8,16 @@ from pydantic import BaseModel
 
 from services.supabase_client import get_client
 
+
+def _normalize_url(url: str) -> str:
+    """Strip protocol and trailing slash for URL comparison."""
+    url = url.strip().lower()
+    for prefix in ("https://", "http://"):
+        if url.startswith(prefix):
+            url = url[len(prefix):]
+            break
+    return url.rstrip("/")
+
 router = APIRouter()
 
 DEMO_FILTER_VALUES = {"none", "all", "completed"}
@@ -95,6 +105,52 @@ def list_leads(
             "imported_at":         row.get("imported_at"),
         })
     return {"leads": leads}
+
+
+@router.post("/leads/sync-demos")
+def sync_demos():
+    """
+    Propagate demo_site_url across all leads that share the same company_website_url.
+    Leads that already have a demo are skipped; leads without one get the URL copied.
+    """
+    db = get_client()
+
+    all_leads = (
+        db.table("leads")
+        .select("id, company_website_url, demo_site_url, demo_site_generated_at")
+        .not_.is_("company_website_url", "null")
+        .limit(5000)
+        .execute()
+    )
+
+    # Build map: normalized_url → (demo_site_url, demo_site_generated_at)
+    url_to_demo: dict[str, tuple[str, str]] = {}
+    for row in (all_leads.data or []):
+        if row.get("demo_site_url") and row.get("company_website_url"):
+            norm = _normalize_url(row["company_website_url"])
+            if norm not in url_to_demo:
+                url_to_demo[norm] = (
+                    row["demo_site_url"],
+                    row.get("demo_site_generated_at") or datetime.now(timezone.utc).isoformat(),
+                )
+
+    if not url_to_demo:
+        return {"synced": 0, "message": "No leads with demos found to sync from"}
+
+    synced = 0
+    for row in (all_leads.data or []):
+        if row.get("demo_site_url"):
+            continue
+        norm = _normalize_url(row.get("company_website_url") or "")
+        if norm and norm in url_to_demo:
+            demo_url, demo_ts = url_to_demo[norm]
+            db.table("leads").update({
+                "demo_site_url": demo_url,
+                "demo_site_generated_at": demo_ts,
+            }).eq("id", row["id"]).execute()
+            synced += 1
+
+    return {"synced": synced}
 
 
 class LeadUpdate(BaseModel):

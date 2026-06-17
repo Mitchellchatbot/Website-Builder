@@ -117,6 +117,37 @@ def generate(req: GenerateRequest, background_tasks: BackgroundTasks):
     if not lead.get("company_website_url"):
         raise HTTPException(status_code=400, detail="Lead has no company_website_url")
 
+    # Reuse an existing demo if another lead with the same company URL already has one
+    existing = (
+        db.table("leads")
+        .select("demo_site_url, demo_site_generated_at")
+        .eq("company_website_url", lead["company_website_url"])
+        .neq("id", req.lead_id)
+        .not_.is_("demo_site_url", "null")
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        existing_url = existing.data[0]["demo_site_url"]
+        existing_ts  = existing.data[0].get("demo_site_generated_at") or datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc).isoformat()
+        insert_result = db.table("lead_websites").insert({
+            "lead_id": req.lead_id,
+            "status": "completed",
+            "netlify_url": existing_url,
+            "completed_at": now,
+        }).execute()
+        db.table("leads").update({
+            "demo_site_url": existing_url,
+            "demo_site_generated_at": existing_ts,
+        }).eq("id", req.lead_id).execute()
+        return {
+            "lead_website_id": insert_result.data[0]["id"],
+            "status": "completed",
+            "reused": True,
+            "demo_url": existing_url,
+        }
+
     insert_result = db.table("lead_websites").insert({
         "lead_id": req.lead_id,
         "status": "pending",
@@ -152,28 +183,87 @@ def generate_batch(req: BatchGenerateRequest, background_tasks: BackgroundTasks)
     if errors:
         raise HTTPException(status_code=400, detail="; ".join(errors))
 
-    rows = [{"lead_id": lead_id, "status": "pending"} for lead_id in req.lead_ids]
-    insert_result = db.table("lead_websites").insert(rows).execute()
+    # Check which company URLs already have a demo in the DB (from any lead)
+    batch_urls = list({
+        leads_by_id[lid]["company_website_url"]
+        for lid in req.lead_ids
+        if leads_by_id[lid].get("company_website_url")
+    })
+    url_to_demo: dict[str, str] = {}
+    url_to_ts:   dict[str, str] = {}
+    if batch_urls:
+        existing = (
+            db.table("leads")
+            .select("id, company_website_url, demo_site_url, demo_site_generated_at")
+            .in_("company_website_url", batch_urls)
+            .not_.is_("demo_site_url", "null")
+            .execute()
+        )
+        batch_id_set = set(req.lead_ids)
+        now_iso = datetime.now(timezone.utc).isoformat()
+        for row in (existing.data or []):
+            if row["id"] in batch_id_set:
+                continue  # don't let a batch lead "reuse" its own (not-yet-generated) URL
+            url = row["company_website_url"]
+            if url not in url_to_demo:
+                url_to_demo[url] = row["demo_site_url"]
+                url_to_ts[url]   = row.get("demo_site_generated_at") or now_iso
 
-    # Preserve requested order when pairing lead_id → lead_website_id
-    inserted_by_lead = {}
-    for row in insert_result.data:
-        inserted_by_lead.setdefault(row["lead_id"], []).append(row["id"])
+    # Split batch: leads whose company already has a demo vs leads that need generation
+    # Also deduplicate within the batch itself (first lead per URL generates, rest reuse later)
+    now = datetime.now(timezone.utc).isoformat()
+    all_queued: list[dict] = []
+    generate_lead_ids: list[str] = []
+    seen_urls: set[str] = set()
 
-    pairs: list[tuple[str, str]] = []
-    lw_ids: list[str] = []
     for lead_id in req.lead_ids:
-        lw_id = inserted_by_lead[lead_id].pop(0)
-        pairs.append((lead_id, lw_id))
-        lw_ids.append(lw_id)
+        url = leads_by_id[lead_id]["company_website_url"]
+        if url in url_to_demo:
+            # Reuse the existing demo immediately
+            demo_url = url_to_demo[url]
+            demo_ts  = url_to_ts.get(url, now)
+            ins = db.table("lead_websites").insert({
+                "lead_id": lead_id,
+                "status": "completed",
+                "netlify_url": demo_url,
+                "completed_at": now,
+            }).execute()
+            db.table("leads").update({
+                "demo_site_url": demo_url,
+                "demo_site_generated_at": demo_ts,
+            }).eq("id", lead_id).execute()
+            all_queued.append({
+                "lead_id": lead_id,
+                "lead_website_id": ins.data[0]["id"],
+                "status": "completed",
+                "reused": True,
+            })
+        elif url in seen_urls:
+            # Another lead in this batch already owns this URL — queue it normally;
+            # it will pick up the sibling's demo via sync-demos or a future generate call.
+            generate_lead_ids.append(lead_id)
+        else:
+            seen_urls.add(url)
+            generate_lead_ids.append(lead_id)
 
-    background_tasks.add_task(_run_batch, pairs)
+    # Queue leads that actually need generation
+    if generate_lead_ids:
+        rows = [{"lead_id": lid, "status": "pending"} for lid in generate_lead_ids]
+        insert_result = db.table("lead_websites").insert(rows).execute()
 
-    queued = [
-        {"lead_id": lead_id, "lead_website_id": lw_id, "status": "pending"}
-        for lead_id, lw_id in pairs
-    ]
-    return {"queued": queued}
+        inserted_by_lead: dict[str, list[str]] = {}
+        for row in insert_result.data:
+            inserted_by_lead.setdefault(row["lead_id"], []).append(row["id"])
+
+        pairs: list[tuple[str, str]] = []
+        for lead_id in generate_lead_ids:
+            lw_id = inserted_by_lead[lead_id].pop(0)
+            pairs.append((lead_id, lw_id))
+            all_queued.append({"lead_id": lead_id, "lead_website_id": lw_id, "status": "pending"})
+
+        background_tasks.add_task(_run_batch, pairs)
+
+    return {"queued": all_queued}
 
 
 @router.get("/generate/batch/status")
