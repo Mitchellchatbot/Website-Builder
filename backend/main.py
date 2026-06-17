@@ -11,6 +11,7 @@ from routes.dashboard import router as dashboard_router
 from routes.custom_links import router as custom_links_router
 from routes.general_sites import router as general_sites_router
 from routes.sheets_builder import router as sheets_builder_router
+from routes.scratch import router as scratch_router
 
 app = FastAPI(title="Website Generator API")
 
@@ -33,6 +34,7 @@ app.include_router(dashboard_router)
 app.include_router(custom_links_router)
 app.include_router(general_sites_router)
 app.include_router(sheets_builder_router)
+app.include_router(scratch_router)
 
 
 @app.get("/health")

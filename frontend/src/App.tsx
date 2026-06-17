@@ -11,6 +11,7 @@ import WebsitesPage from "./pages/WebsitesPage";
 import GeneralSitesPage from "./pages/GeneralSitesPage";
 import SheetsBuilderPage from "./pages/SheetsBuilderPage";
 import LeadWebsitesPage from "./pages/LeadWebsitesPage";
+import BuildFromScratchPage from "./pages/BuildFromScratchPage";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/general-sites" element={<GeneralSitesPage />} />
           <Route path="/sheets-builder" element={<SheetsBuilderPage />} />
           <Route path="/lead-websites" element={<LeadWebsitesPage />} />
+          <Route path="/build-from-scratch" element={<BuildFromScratchPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

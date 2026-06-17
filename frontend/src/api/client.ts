@@ -293,6 +293,29 @@ export const api = {
   syncDemos: (): Promise<{ synced: number; message?: string }> =>
     request("/leads/sync-demos", { method: "POST" }),
 
+  // ── Build from Scratch ─────────────────────────────────────────────────────
+
+  getScratchBuilds: (): Promise<{ builds: SheetsEntry[] }> =>
+    request("/scratch"),
+
+  createScratchBuild: (
+    businessName: string,
+    businessDescription: string,
+    designPreferences?: string,
+  ): Promise<{ build: SheetsEntry }> =>
+    request("/scratch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        business_name: businessName,
+        business_description: businessDescription,
+        design_preferences: designPreferences ?? null,
+      }),
+    }),
+
+  deleteScratchBuild: (entryId: string): Promise<{ deleted: boolean }> =>
+    request(`/scratch/${entryId}`, { method: "DELETE" }),
+
   exportLeadsUrl: (
     demoFilter: DemoFilter,
     dateRange:  DateRange  = "all",

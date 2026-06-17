@@ -131,7 +131,8 @@ function Sidebar() {
         <SidebarLink to="/lead-websites" icon="🌐" label="Lead Websites" />
         <SidebarLink to="/custom-links"  icon="🔗" label="Custom Links" />
         <SidebarLink to="/general-sites" icon="🌐" label="General Sites" />
-        <SidebarLink to="/sheets-builder" icon="📊" label="Sheets Builder" />
+        <SidebarLink to="/sheets-builder"    icon="📊" label="Sheets Builder" />
+        <SidebarLink to="/build-from-scratch" icon="✦"  label="Build from Scratch" />
         <SidebarLink to="/websites"      icon="🗂" label="Websites" />
         <SidebarLink to="/active"       icon="⚡" label="Active Runs" />
         <SidebarLink to="/history"      icon="📋" label="History" />
