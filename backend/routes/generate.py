@@ -2,7 +2,9 @@ import base64
 import logging
 import os
 import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -30,74 +32,80 @@ class BatchGenerateRequest(BaseModel):
 
 def _run_batch(pairs: list[tuple[str, str]], resume_from: str = "scrape") -> None:
     """
-    Serial background worker — processes leads one at a time.
+    Parallel background worker — runs up to PIPELINE_CONCURRENCY pipelines at once.
 
-    Halts the batch if CONSECUTIVE_FAILURE_THRESHOLD leads fail in a row,
-    marking remaining leads as 'skipped' in the DB.
+    Halts the batch if CONSECUTIVE_FAILURE_THRESHOLD leads fail (total, not just
+    consecutive, since parallelism makes streak-counting unreliable), marking
+    remaining queued leads as 'skipped'.
 
-    KNOWN LIMITATION: If uvicorn restarts while this is running,
-    in-flight rows are stranded with their last status (e.g. 'scraping') and
-    no auto-recovery occurs.
+    KNOWN LIMITATION: If uvicorn restarts while this is running, in-flight rows
+    are stranded with their last status and no auto-recovery occurs.
     """
+    concurrency = int(os.getenv("PIPELINE_CONCURRENCY", "3"))
     total = len(pairs)
-    succeeded = 0
-    failed = 0
-    skipped = 0
-    consecutive_failures = 0
+
+    lock = threading.Lock()
+    counters = {"succeeded": 0, "failed": 0, "skipped": 0}
     failed_leads: list[dict] = []
-    batch_halted = False
+    halt = threading.Event()
 
-    logger.info("━━━ Batch started: %d lead(s) ━━━", total)
+    logger.info("━━━ Batch started: %d lead(s), concurrency=%d ━━━", total, concurrency)
 
-    for index, (lead_id, lead_website_id) in enumerate(pairs, start=1):
-        if batch_halted:
+    def _process_one(index: int, lead_id: str, lead_website_id: str) -> None:
+        if halt.is_set():
             try:
                 db = get_client()
                 db.table("lead_websites").update({
                     "status": "skipped",
-                    "error": f"Batch halted after {CONSECUTIVE_FAILURE_THRESHOLD} consecutive failures",
+                    "error": f"Batch halted after {CONSECUTIVE_FAILURE_THRESHOLD} failures",
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                 }).eq("id", lead_website_id).execute()
             except Exception:
                 logger.exception("Failed to mark lead_website %s as skipped", lead_website_id)
-            skipped += 1
-            continue
+            with lock:
+                counters["skipped"] += 1
+            return
 
         logger.info("[%d/%d] Starting lead %s", index, total, lead_id)
         start = time.monotonic()
-
         try:
             result = run_pipeline(lead_id, lead_website_id, resume_from=resume_from)
             duration = round(time.monotonic() - start)
             if isinstance(result, dict) and result.get("status") in ("cancelled", "awaiting_approval"):
                 logger.info("[%d/%d] ⏸ %s after %ds", index, total, result.get("status"), duration)
-                continue
+                return
             logger.info("[%d/%d] ✅ Completed in %ds", index, total, duration)
-            succeeded += 1
-            consecutive_failures = 0
+            with lock:
+                counters["succeeded"] += 1
         except Exception as e:
             duration = round(time.monotonic() - start)
             logger.error("[%d/%d] ❌ Failed after %ds: %s", index, total, duration, e)
-            failed += 1
-            failed_leads.append({"lead_id": lead_id, "error": str(e)})
-            consecutive_failures += 1
+            with lock:
+                counters["failed"] += 1
+                failed_leads.append({"lead_id": lead_id, "error": str(e)})
+                if counters["failed"] >= CONSECUTIVE_FAILURE_THRESHOLD:
+                    logger.error(
+                        "━━━ BATCH HALTED: %d failures reached. ━━━",
+                        CONSECUTIVE_FAILURE_THRESHOLD,
+                    )
+                    halt.set()
 
-            if consecutive_failures >= CONSECUTIVE_FAILURE_THRESHOLD:
-                logger.error(
-                    "━━━ BATCH HALTED: %d consecutive failures. "
-                    "Skipping remaining %d lead(s). ━━━",
-                    CONSECUTIVE_FAILURE_THRESHOLD,
-                    total - index,
-                )
-                batch_halted = True
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        futures = {
+            executor.submit(_process_one, i, lead_id, lw_id): (lead_id, lw_id)
+            for i, (lead_id, lw_id) in enumerate(pairs, start=1)
+        }
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception:
+                pass  # already logged inside _process_one
 
     logger.info("━━━ Batch finished ━━━")
     logger.info("  Total:      %d", total)
-    logger.info("  ✅ Done:    %d", succeeded)
-    logger.info("  ❌ Failed:  %d", failed)
-    logger.info("  ⏭ Skipped: %d", skipped)
-    if batch_halted:
-        logger.warning("  ⚠ Batch was halted due to consecutive failures")
+    logger.info("  ✅ Done:    %d", counters["succeeded"])
+    logger.info("  ❌ Failed:  %d", counters["failed"])
+    logger.info("  ⏭ Skipped: %d", counters["skipped"])
     for fl in failed_leads:
         logger.info("    ✗ %s: %s", fl["lead_id"], fl["error"])
 
