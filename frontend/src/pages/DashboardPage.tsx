@@ -106,7 +106,7 @@ export default function DashboardPage() {
                       color: "#FAFAFA",
                     }}
                     labelStyle={{ color: "#8A8A8A", marginBottom: 4 }}
-                    formatter={(value: number) => [value, "Demos"]}
+                    formatter={(value) => [value as number, "Demos"]}
                   />
                   <Line
                     type="monotone"
