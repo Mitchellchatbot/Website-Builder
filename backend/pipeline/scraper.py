@@ -19,7 +19,7 @@ load_dotenv()
 MODEL = "claude-sonnet-4-6"
 OUTPUT_DIR = Path("output")
 
-anthropic_client = anthropic.Anthropic()
+anthropic_client = anthropic.Anthropic(api_key=os.getenv("CLAUDE_API_KEY") or os.getenv("ANTHROPIC_API_KEY"))
 
 
 class ScrapeFailedError(Exception):
