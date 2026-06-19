@@ -21,21 +21,33 @@ def delete_history_item(lead_website_id: str):
     return {"deleted": True}
 
 
+def _delegation_doer_lead_ids(db) -> list[str]:
+    res = db.table("leads").select("id").eq("source", "delegation-doer").execute()
+    return [r["id"] for r in (res.data or [])]
+
+
 @router.get("/history")
 def list_history():
     db = get_client()
+    excluded = _delegation_doer_lead_ids(db)
 
-    # 1. All generation runs
-    runs_result = db.table("lead_websites").select("*").order("started_at", desc=True).limit(200).execute()
+    # 1. All generation runs (excluding delegation-doer leads)
+    q = db.table("lead_websites").select("*").order("started_at", desc=True)
+    if excluded:
+        q = q.not_.in_("lead_id", excluded)
+    runs_result = q.limit(200).execute()
     rows = runs_result.data or []
 
     # lead_ids that already have at least one run record
     lead_ids_with_run = {row["lead_id"] for row in rows}
 
     # 2. All leads that have a manually-set demo URL but NO run record at all
-    manual_result = db.table("leads").select(
+    mq = db.table("leads").select(
         "id, first_name, last_name, email, company_name, demo_site_url, demo_site_generated_at, imported_at"
-    ).not_.is_("demo_site_url", "null").execute()
+    ).not_.is_("demo_site_url", "null")
+    if excluded:
+        mq = mq.not_.in_("id", excluded)
+    manual_result = mq.execute()
 
     # 3. Enrich run rows with lead data
     all_lead_ids = lead_ids_with_run | {l["id"] for l in (manual_result.data or [])}

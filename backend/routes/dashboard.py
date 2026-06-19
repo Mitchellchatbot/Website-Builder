@@ -19,8 +19,15 @@ SOURCES = [
 ]
 
 
+def _delegation_doer_lead_ids(db) -> list[str]:
+    res = db.table("leads").select("id").eq("source", "delegation-doer").execute()
+    return [r["id"] for r in (res.data or [])]
+
+
 def _fetch_all(db, since_iso: str | None = None) -> list[dict]:
     """Pull rows from every source table, normalized into a single shape."""
+    excluded_lead_ids = _delegation_doer_lead_ids(db)
+
     rows: list[dict] = []
     for src in SOURCES:
         q = (
@@ -30,6 +37,9 @@ def _fetch_all(db, since_iso: str | None = None) -> list[dict]:
         )
         if since_iso:
             q = q.gte("completed_at", since_iso)
+        # Exclude delegation-doer leads from KPIs
+        if src["table"] == "lead_websites" and excluded_lead_ids:
+            q = q.not_.in_("lead_id", excluded_lead_ids)
         result = q.execute()
         for r in (result.data or []):
             rows.append({
