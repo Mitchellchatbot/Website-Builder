@@ -459,6 +459,39 @@ Even if the original site had different nav items, this generated site uses ONLY
 
 3. **Stats / Trust Bar** — dark strip, 3-4 key stats
    - Years stat: `<span class="count-up" data-target="{years}" data-suffix="+"></span>`
+   - Layout (REQUIRED CSS on the inner wrapper — do NOT skip):
+     ```css
+     .stats-grid {{
+       display: flex;
+       justify-content: space-around;
+       align-items: center;
+       flex-wrap: wrap;
+       gap: 32px 48px;
+       max-width: 900px;
+       margin: 0 auto;
+       text-align: center;
+     }}
+     .stat-item {{
+       flex: 1 0 140px;
+       text-align: center;
+     }}
+     .stat-num {{
+       display: block;
+       font-size: clamp(2rem, 4vw, 3rem);
+       font-weight: 700;
+       color: #fff;
+       line-height: 1.1;
+     }}
+     .stat-label {{
+       display: block;
+       font-size: 13px;
+       color: rgba(255,255,255,0.65);
+       margin-top: 6px;
+       letter-spacing: 0.02em;
+     }}
+     ```
+   - Wrap stats in `<div class="stats-grid stagger-children">`, each stat in `<div class="stat-item fade-up">`
+   - Stat number uses `<span class="stat-num count-up" data-target="..." data-suffix="+"></span>`
 
 4. **Services / Programs** — `<section id="programs">` — 3-4 cards
    - Grid wrapper: `class="cards-grid stagger-children"`
@@ -508,8 +541,40 @@ Even if the original site had different nav items, this generated site uses ONLY
      - Primary: solid accent/teal color, phone icon SVG, "Call {phone}"
      - Ghost: outline white border, white text, "Verify Insurance Online"
    - All elements: `class="fade-up"` staggered
-   - Footer grid: logo + tagline + seals | nav links | contact (phone, email, areas)
-     - Nav links column lists exactly these 5 links: Programs, What We Treat, Why Us, About, Contact
+   - Footer grid (REQUIRED CSS — do NOT use floats, inline-block, or flexbox for the top grid):
+     ```css
+     .footer-grid {{
+       display: grid;
+       grid-template-columns: 2fr 1fr 1fr;
+       gap: 48px;
+       align-items: start;
+       max-width: 1100px;
+       margin: 0 auto;
+       padding: 60px 24px 40px;
+     }}
+     @media (max-width: 768px) {{
+       .footer-grid {{ grid-template-columns: 1fr 1fr; row-gap: 32px; }}
+       .footer-col:first-child {{ grid-column: 1 / -1; }}
+     }}
+     .footer-bottom {{
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       flex-wrap: wrap;
+       gap: 12px;
+       max-width: 1100px;
+       margin: 0 auto;
+       padding: 20px 24px;
+       border-top: 1px solid rgba(255,255,255,0.12);
+       font-size: 13px;
+       color: rgba(255,255,255,0.45);
+     }}
+     ```
+   - Footer has exactly 3 columns inside `.footer-grid`:
+     - Col 1 (`.footer-col`): logo image + company tagline + accreditation seal images in a small flex row
+     - Col 2 (`.footer-col`): heading "Quick Links" + list of exactly 5 links: Programs, What We Treat, Why Us, About, Contact
+     - Col 3 (`.footer-col`): heading "Contact Us" + phone, email, service areas
+   - Nav links column lists exactly these 5 links: Programs, What We Treat, Why Us, About, Contact
    - Footer columns: `class="fade-up"` staggered
    - Footer bottom copyright line: `© 2026 {company_name}. All rights reserved.` — year is ALWAYS 2026, never any other year
 
@@ -594,6 +659,10 @@ Animation class guide:
 - [ ] Hero form card background fully contains all fields — no clipping, box-sizing: border-box on card and all inputs
 - [ ] body selector has padding-bottom: 80px (directly on body, not a wrapper)
 - [ ] Stats/Trust Bar section has padding-top: 60px AND padding-bottom: 80px so sticky bar never overlaps it
+- [ ] Stats section inner wrapper uses `.stats-grid` with `display: flex; justify-content: space-around; flex-wrap: wrap` — numbers and labels are always horizontally distributed and never stacked randomly
+- [ ] Each stat uses `.stat-item` > `.stat-num.count-up` + `.stat-label` — numbers are large (clamp 2rem–3rem), labels are small (13px muted)
+- [ ] Footer top section uses `.footer-grid` with `display: grid; grid-template-columns: 2fr 1fr 1fr` — three distinct columns, never a single column or uneven layout
+- [ ] Footer bottom bar uses `.footer-bottom` with `display: flex; justify-content: space-between` — copyright left, optional links right
 - [ ] Nav logo image and company name text are flex-aligned with gap: 8px, no large gap between them
 - [ ] No em dashes anywhere in the page copy
 - [ ] No emojis anywhere in the page
