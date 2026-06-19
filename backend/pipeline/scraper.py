@@ -8,19 +8,18 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
+import anthropic
 from dotenv import load_dotenv
-from groq import Groq
 from bs4 import BeautifulSoup
 from PIL import Image as PILImage
 from playwright.sync_api import sync_playwright
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = "openai/gpt-oss-120b"
+MODEL = "claude-sonnet-4-6"
 OUTPUT_DIR = Path("output")
 
-groq_client = Groq(api_key=GROQ_API_KEY)
+anthropic_client = anthropic.Anthropic()
 
 
 class ScrapeFailedError(Exception):
@@ -606,16 +605,15 @@ Website content:
 {sections_block}
 """
 
-    response = groq_client.chat.completions.create(
-        model=GROQ_MODEL,
+    response = anthropic_client.messages.create(
+        model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1,
         max_tokens=3500,
-        response_format={"type": "json_object"},
     )
 
     try:
-        result = json.loads(response.choices[0].message.content)
+        result = json.loads(response.content[0].text)
         # Ensure reviews key always exists
         if "reviews" not in result:
             result["reviews"] = []
