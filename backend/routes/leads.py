@@ -45,6 +45,7 @@ def _build_query(db, demo_filter: str, date_range: str = "all", date_start: str 
         db.table("leads")
         .select("id, first_name, last_name, email, company_name, company_website_url, demo_site_url, demo_site_generated_at, imported_at")
         .not_.is_("company_website_url", "null")
+        .neq("source", "delegation-doer")
         .order("first_name")
     )
     if demo_filter == "none":
@@ -82,7 +83,7 @@ def list_leads(
     if date_range  not in DATE_RANGE_VALUES:  date_range  = "all"
 
     db     = get_client()
-    result = _build_query(db, demo_filter, date_range, date_start, date_end).limit(100).execute()
+    result = _build_query(db, demo_filter, date_range, date_start, date_end).limit(2000).execute()
 
     leads = []
     for row in result.data:
