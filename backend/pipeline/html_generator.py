@@ -421,6 +421,37 @@ The right side of the nav (after the 5 links) MUST contain exactly these 2 CTA b
 
 These rules OVERRIDE any visual references from the source company website.
 Even if the original site had different nav items, this generated site uses ONLY the 5 above.
+
+###############################################################
+# ALIGNMENT SYSTEM — STRICT, NON-NEGOTIABLE
+###############################################################
+Every section that constrains its content width MUST use the SAME container max-width and
+horizontal padding so the nav, hero, and sticky bar all align to the same left/right edges.
+
+REQUIRED CSS (add exactly this to your <style> block):
+```css
+.site-container {{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  box-sizing: border-box;
+}}
+@media (max-width: 768px) {{
+  .site-container {{ padding: 0 20px; }}
+}}
+```
+
+REQUIRED usage — wrap the inner content of these three elements with `<div class="site-container">`:
+  - `<header>` / `<nav>` — the logo + links + CTAs row goes inside `.site-container`
+  - `<section>` hero inner grid — the two-column headline+form layout goes inside `.site-container`
+  - The sticky bottom CTA bar's inner content row (phone text + button) goes inside `.site-container`
+
+Every other content section (programs, what-we-treat, why-us, about, stats, footer) MUST also
+wrap its inner content in `<div class="site-container">` so all sections share the same edges.
+
+Do NOT give any nav, sticky bar, or section wrapper its own conflicting max-width. The ONLY place
+max-width is set is on `.site-container`. This ensures pixel-perfect left/right alignment across
+all sections on every viewport width.
 ###############################################################
 
 ### Step 2 — 10-Section Layout (in order)
@@ -430,8 +461,10 @@ Even if the original site had different nav items, this generated site uses ONLY
    - "Verify Insurance" ghost/outline pill button (border in brand primary, transparent background)
    - Phone number pill button in solid brand primary color with phone icon SVG
    - Both buttons sit side by side at the far right of the nav
+   - Inner content row MUST be wrapped in `<div class="site-container">` (see ALIGNMENT SYSTEM above)
 
 2. **Hero** — Split: left = headline + CTAs, right = form card
+   - Inner two-column grid MUST be wrapped in `<div class="site-container">` (see ALIGNMENT SYSTEM above)
    - Playfair Display headline: empowering phrase + italic accent line
    - 2-3 sentence sub from `overall_summary`
    - Primary CTA = call button with {phone}
@@ -459,6 +492,7 @@ Even if the original site had different nav items, this generated site uses ONLY
 
 3. **Stats / Trust Bar** — dark strip, 3-4 key stats
    - Years stat: `<span class="count-up" data-target="{years}" data-suffix="+"></span>`
+   - Section inner content MUST be wrapped in `<div class="site-container">`, then `.stats-grid` inside that
    - Layout (REQUIRED CSS on the inner wrapper — do NOT skip):
      ```css
      .stats-grid {{
@@ -467,8 +501,6 @@ Even if the original site had different nav items, this generated site uses ONLY
        align-items: center;
        flex-wrap: wrap;
        gap: 32px 48px;
-       max-width: 900px;
-       margin: 0 auto;
        text-align: center;
      }}
      .stat-item {{
@@ -541,6 +573,7 @@ Even if the original site had different nav items, this generated site uses ONLY
      - Primary: solid accent/teal color, phone icon SVG, "Call {phone}"
      - Ghost: outline white border, white text, "Verify Insurance Online"
    - All elements: `class="fade-up"` staggered
+   - Footer inner content MUST be wrapped in `<div class="site-container">` — do NOT put max-width on .footer-grid or .footer-bottom directly
    - Footer grid (REQUIRED CSS — do NOT use floats, inline-block, or flexbox for the top grid):
      ```css
      .footer-grid {{
@@ -548,9 +581,7 @@ Even if the original site had different nav items, this generated site uses ONLY
        grid-template-columns: 2fr 1fr 1fr;
        gap: 48px;
        align-items: start;
-       max-width: 1100px;
-       margin: 0 auto;
-       padding: 60px 24px 40px;
+       padding: 60px 0 40px;
      }}
      @media (max-width: 768px) {{
        .footer-grid {{ grid-template-columns: 1fr 1fr; row-gap: 32px; }}
@@ -562,9 +593,7 @@ Even if the original site had different nav items, this generated site uses ONLY
        align-items: center;
        flex-wrap: wrap;
        gap: 12px;
-       max-width: 1100px;
-       margin: 0 auto;
-       padding: 20px 24px;
+       padding: 20px 0;
        border-top: 1px solid rgba(255,255,255,0.12);
        font-size: 13px;
        color: rgba(255,255,255,0.45);
@@ -588,6 +617,10 @@ Even if the original site had different nav items, this generated site uses ONLY
 - Buttons: pill (50px radius), 14px 28px padding
 - CSS variables (REQUIRED): define `:root {{ --primary: #HEX; --accent: #HEX; --primary-tint: #HEX; }}` at the top of the style block — the chat widget reads `--primary` at runtime to match brand color
 - Sticky bottom bar: 72px, brand primary, white text, phone + CTA
+  - The bar itself is full-width (`width: 100%`), but its inner content row MUST be wrapped in
+    `<div class="site-container">` so the text and button align to the same edges as the nav and hero
+  - Inner content row: `display: flex; align-items: center; justify-content: space-between`
+    inside `.site-container` — left side = "Help is available now." text, right side = CTA button
 - Sticky bar anti-overlap (CRITICAL): the sticky bar is `position: fixed; bottom: 0; z-index: 999`
   - `body` MUST have `padding-bottom: 80px` — this is NON-NEGOTIABLE, add it directly to the body selector
   - The Stats/Trust Bar section MUST have `padding-top: 60px` AND `padding-bottom: 80px` — it often appears at the bottom of the initial viewport and the sticky bar covers it if padding is missing
@@ -661,9 +694,14 @@ Animation class guide:
 - [ ] Stats/Trust Bar section has padding-top: 60px AND padding-bottom: 80px so sticky bar never overlaps it
 - [ ] Stats section inner wrapper uses `.stats-grid` with `display: flex; justify-content: space-around; flex-wrap: wrap` — numbers and labels are always horizontally distributed and never stacked randomly
 - [ ] Each stat uses `.stat-item` > `.stat-num.count-up` + `.stat-label` — numbers are large (clamp 2rem–3rem), labels are small (13px muted)
-- [ ] Footer top section uses `.footer-grid` with `display: grid; grid-template-columns: 2fr 1fr 1fr` — three distinct columns, never a single column or uneven layout
-- [ ] Footer bottom bar uses `.footer-bottom` with `display: flex; justify-content: space-between` — copyright left, optional links right
+- [ ] Footer top section uses `.footer-grid` with `display: grid; grid-template-columns: 2fr 1fr 1fr` — three distinct columns, never a single column or uneven layout — wrapped in `.site-container`
+- [ ] Footer bottom bar uses `.footer-bottom` with `display: flex; justify-content: space-between` — copyright left, optional links right — wrapped in `.site-container`
 - [ ] Nav logo image and company name text are flex-aligned with gap: 8px, no large gap between them
+- [ ] `.site-container` CSS class defined with `max-width: 1200px; margin: 0 auto; padding: 0 40px; box-sizing: border-box`
+- [ ] Nav inner content row wrapped in `<div class="site-container">` — aligns with hero and all sections
+- [ ] Hero inner two-column grid wrapped in `<div class="site-container">` — same edges as nav
+- [ ] Sticky bar inner content row wrapped in `<div class="site-container">` — text and button align to same edges as nav
+- [ ] Every section's inner content wrapped in `<div class="site-container">` — no section uses its own conflicting max-width
 - [ ] No em dashes anywhere in the page copy
 - [ ] No emojis anywhere in the page
 - [ ] Nav has EXACTLY 5 links in order: Programs | What We Treat | Why Us | About | Contact — no more, no fewer, no renames
