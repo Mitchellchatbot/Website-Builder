@@ -42,7 +42,15 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('routes/dashboard.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c \"import routes.sheets_builder; print\\('OK'\\)\")",
       "Bash(git -C \"f:\\\\Video Recording\" add frontend/Dockerfile)",
-      "Bash(git -C \"f:\\\\Video Recording\" diff --cached)"
+      "Bash(git -C \"f:\\\\Video Recording\" diff --cached)",
+      "Bash(git -C \"f:\\\\Video Recording\" add frontend/src/api/client.ts)",
+      "Bash(git -C \"f:\\\\Video Recording\" status)",
+      "Bash(git -C \"f:\\\\Video Recording\" diff HEAD frontend/Dockerfile)",
+      "Bash(git -C \"f:\\\\Video Recording\" log --oneline -3)",
+      "Bash(git -C 'f:\\\\Video Recording' commit -m ' *)",
+      "Bash(git -C \"f:\\\\Video Recording\" push)",
+      "Bash(git -C \"f:\\\\Video Recording\" add backend/pipeline/html_generator.py)",
+      "Bash(git -C \"f:\\\\Video Recording\" diff --cached --stat)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Sofyan Abdullah\\.claude\\projects\\d--Video-Recording\\memory",
