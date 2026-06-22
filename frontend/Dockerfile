@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 # Vite reads VITE_* env vars at build time and inlines them into the bundle.
 # Railway passes service variables as build args; ARG + ENV makes them visible to `npm run build`.

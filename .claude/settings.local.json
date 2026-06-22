@@ -40,7 +40,9 @@
       "Bash(python -m py_compile pipeline/html_generator.py)",
       "Bash(python -c \"import ast; ast.parse\\(open\\('pipeline/general_html_generator.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('routes/dashboard.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
-      "Bash(python -c \"import routes.sheets_builder; print\\('OK'\\)\")"
+      "Bash(python -c \"import routes.sheets_builder; print\\('OK'\\)\")",
+      "Bash(git -C \"f:\\\\Video Recording\" add frontend/Dockerfile)",
+      "Bash(git -C \"f:\\\\Video Recording\" diff --cached)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Sofyan Abdullah\\.claude\\projects\\d--Video-Recording\\memory",
