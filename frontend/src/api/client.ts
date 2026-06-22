@@ -240,6 +240,7 @@ export interface SheetsEntry {
   design_preferences: string | null;
   business_description: string | null;
   row_index: number;
+  created_at: string | null;
   latest_run: SheetsEntryRun | null;
 }
 
