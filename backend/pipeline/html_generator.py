@@ -616,11 +616,40 @@ all sections on every viewport width.
 - Cards: white, 16px radius, subtle shadow, 1px light border
 - Buttons: pill (50px radius), 14px 28px padding
 - CSS variables (REQUIRED): define `:root {{ --primary: #HEX; --accent: #HEX; --primary-tint: #HEX; }}` at the top of the style block — the chat widget reads `--primary` at runtime to match brand color
-- Sticky bottom bar: 72px, brand primary, white text, phone + CTA
-  - The bar itself is full-width (`width: 100%`), but its inner content row MUST be wrapped in
-    `<div class="site-container">` so the text and button align to the same edges as the nav and hero
-  - Inner content row: `display: flex; align-items: center; justify-content: space-between`
-    inside `.site-container` — left side = "Help is available now." text, right side = CTA button
+- Sticky bottom bar: use EXACTLY this CSS and HTML structure — do NOT deviate:
+  CSS (in your <style> block):
+  ```css
+  .sticky-bar {{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 72px;
+    background: var(--primary);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+  }}
+  .sticky-bar .site-container {{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }}
+  ```
+  HTML (right before </body>):
+  ```html
+  <div class="sticky-bar">
+    <div class="site-container">
+      <span style="color:#fff;font-size:14px;font-weight:500;">Help is available now. Speak with our caring team 24/7.</span>
+      <a href="tel:{phone}" style="display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:50px;background:#fff;color:var(--primary);font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.39 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call {phone}
+      </a>
+    </div>
+  </div>
+  ```
+  CRITICAL: `.sticky-bar .site-container` inherits the same `max-width: 1200px; padding: 0 40px` as every other section, so the text and button align perfectly with the nav and hero content.
 - Sticky bar anti-overlap (CRITICAL): the sticky bar is `position: fixed; bottom: 0; z-index: 999`
   - `body` MUST have `padding-bottom: 80px` — this is NON-NEGOTIABLE, add it directly to the body selector
   - The Stats/Trust Bar section MUST have `padding-top: 60px` AND `padding-bottom: 80px` — it often appears at the bottom of the initial viewport and the sticky bar covers it if padding is missing
@@ -655,6 +684,14 @@ Section label underline animation (REQUIRED on every section):
 Every section has a small ALL-CAPS text label above the h2 (e.g. "WHY CHOOSE US", "OUR PROGRAMS", "YOUR JOURNEY", "ACCREDITATIONS", "HOW IT WORKS", "WHAT CLIENTS SAY").
 CRITICAL — these labels must be PLAIN UPPERCASE TEXT ONLY. Do NOT add any background color, pill shape, badge, chip, border-radius, or padding box. No styling on the element itself — just the raw text. Apply ONLY `class="section-label"` for the underline animation.
 The Intersection Observer will draw a left-to-right underline in var(--primary) when each label scrolls into view.
+
+FORBIDDEN — DO NOT use `class="section-label"` on ANY hero element. This includes:
+  - The hero location pill ("Accredited Treatment, Nationwide Support" etc.) — this is a PILL with an icon, NOT a section label. Do NOT give it class="section-label". Style it as a small bordered pill.
+  - Any element inside `<section class="hero">` or `<header>`
+  - The nav or sticky bar
+  If `section-label` is used on a hero element, the Intersection Observer draws a colored horizontal line across the hero — this is a CRITICAL visual bug.
+
+FORBIDDEN — DO NOT add `border-bottom` to `<header>`, `<nav>`, or any nav wrapper. A colored border on the nav creates an unwanted horizontal stripe across the top of the hero section.
 
 Animation class guide:
 | Element                        | Class                            |
@@ -713,6 +750,9 @@ Animation class guide:
 - [ ] CTA banner has status pill, italic headline, subtitle, and two buttons (call + verify insurance ghost)
 
 - [ ] Every section label ("WHY CHOOSE US", "OUR PROGRAMS", "YOUR JOURNEY", "ACCREDITATIONS" etc.) has class="section-label" — PLAIN UPPERCASE TEXT, no background, no pill, no border-radius, no padding box
+- [ ] Hero location pill does NOT have class="section-label" — it is a styled pill, never a section label
+- [ ] No `border-bottom` on `<header>` or `<nav>` — a colored nav border creates a horizontal stripe across the hero
+- [ ] Sticky bar uses EXACTLY the .sticky-bar + .site-container HTML/CSS structure from Step 3 — the text and Call button align with the nav and hero, never flush to viewport edges
 - [ ] Chat widget iframe embedded before </body> — copy the EXACT script from Step 5 verbatim, bottom:0 right:0, do NOT modify bottom value
 - [ ] images/emily.png is pre-copied to output images/ folder — widget references it via window.location.origin + '/images/emily.png'
 - [ ] Chat widget uses var(--primary) and var(--accent) matching the page design system
