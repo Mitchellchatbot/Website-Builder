@@ -16,7 +16,7 @@ export default function LeadsPage() {
   const [importedTo,      setImportedTo]      = useState("");
   const [loading,     setLoading]     = useState(true);
   const [fetchError,  setFetchError]  = useState<string | null>(null);
-  const [selected,    setSelected]    = useState<Set<string>>(new Set());
+  const [basket,      setBasket]      = useState<Map<string, Lead>>(new Map());
   const [editingId,    setEditingId]    = useState<string | null>(null);
   const [submitting,   setSubmitting]   = useState(false);
   const [submitError,  setSubmitError]  = useState<string | null>(null);
@@ -31,7 +31,6 @@ export default function LeadsPage() {
       .getLeads(demoFilter, dateRange, dateStart || undefined, dateEnd || undefined)
       .then((r) => {
         setLeads(r.leads);
-        setSelected(new Set());
       })
       .catch((e) => setFetchError(e.message))
       .finally(() => setLoading(false));
@@ -77,32 +76,36 @@ export default function LeadsPage() {
     });
   }, [leads, query, importedSinceMs, importedBeforeMs]);
 
-  const allSelected = visibleLeads.length > 0 && visibleLeads.every((l) => selected.has(l.id));
+  const selected = useMemo(() => new Set(basket.keys()), [basket]);
+
+  const allSelected = visibleLeads.length > 0 && visibleLeads.every((l) => basket.has(l.id));
 
   const toggleAll = () => {
-    setSelected((prev) => {
-      const next = new Set(prev);
+    setBasket((prev) => {
+      const next = new Map(prev);
       if (allSelected) visibleLeads.forEach((l) => next.delete(l.id));
-      else             visibleLeads.forEach((l) => next.add(l.id));
+      else             visibleLeads.forEach((l) => next.set(l.id, l));
       return next;
     });
   };
 
-  const toggleOne = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+  const toggleOne = (lead: Lead) => {
+    setBasket((prev) => {
+      const next = new Map(prev);
+      if (next.has(lead.id)) next.delete(lead.id);
+      else next.set(lead.id, lead);
       return next;
     });
   };
+
+  const clearBasket = () => setBasket(new Map());
 
   const handleGenerateSelected = async () => {
-    if (selected.size === 0 || submitting) return;
+    if (basket.size === 0 || submitting) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const { queued } = await api.generateBatch([...selected]);
+      const { queued } = await api.generateBatch([...basket.keys()]);
       const ids = queued.map((q) => q.lead_website_id).join(",");
       navigate(`/batch/${ids}`);
     } catch (e: unknown) {
@@ -156,7 +159,7 @@ export default function LeadsPage() {
           {/* Stats row */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <StatPill label={visibleLeads.length < leads.length ? "Filtered" : "Total"} value={visibleLeads.length} color="#7c3aed" />
-            <StatPill label="Selected" value={selected.size} color="#ff6b01" />
+            <StatPill label="Selected" value={basket.size} color="#ff6b01" />
             <StatPill
               label="With Demo"
               value={visibleLeads.filter((l) => l.has_demo).length}
@@ -218,18 +221,44 @@ export default function LeadsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button
                 onClick={handleGenerateSelected}
-                disabled={selected.size === 0 || submitting}
+                disabled={basket.size === 0 || submitting}
                 className="btn-primary"
-                style={selected.size === 0 ? { opacity: 0.4, cursor: "not-allowed" } : {}}
+                style={basket.size === 0 ? { opacity: 0.4, cursor: "not-allowed" } : {}}
               >
                 {submitting ? (
                   <><Spinner size={12} />Queuing…</>
-                ) : selected.size > 0 ? (
-                  <>⚡ Generate {selected.size} site{selected.size > 1 ? "s" : ""}</>
+                ) : basket.size > 0 ? (
+                  <>⚡ Generate {basket.size} site{basket.size > 1 ? "s" : ""}</>
                 ) : (
                   <>⚡ Generate selected</>
                 )}
               </button>
+
+              {basket.size > 0 && (
+                <button
+                  onClick={clearBasket}
+                  title="Clear all selected leads"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "1px solid rgba(248,113,113,0.25)",
+                    background: "rgba(248,113,113,0.06)",
+                    color: "#f87171",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(248,113,113,0.14)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(248,113,113,0.06)"; }}
+                >
+                  ✕ Clear {basket.size}
+                </button>
+              )}
 
               <button
                 onClick={handleSyncDemos}
@@ -298,7 +327,7 @@ export default function LeadsPage() {
               <FilterChips value={demoFilter} onChange={(v) => { setDemoFilter(v); setDateRange("all"); }} />
               <ExportButton
                 leads={visibleLeads}
-                disabled={visibleLeads.length === 0}
+                selectedLeads={[...basket.values()]}
               />
             </div>
           </div>
@@ -440,7 +469,7 @@ export default function LeadsPage() {
                       isSelected={isSelected}
                       isEditing={isEditing}
                       isLast={i === visibleLeads.length - 1}
-                      onToggle={() => toggleOne(lead.id)}
+                      onToggle={() => toggleOne(lead)}
                       onEdit={() => setEditingId(isEditing ? null : lead.id)}
                       onSaved={(patch) => {
                         setLeads((prev) => prev.map((l) =>
@@ -854,48 +883,68 @@ function ImportedFilterChips({ value, onChange }: { value: ImportedFilter; onCha
   );
 }
 
-function ExportButton({ leads, disabled }: { leads: Lead[]; disabled: boolean }) {
-  // Only export leads that have a demo URL; sort by demo generated date desc
-  const exportable = leads
-    .filter((l) => l.has_demo && l.demo_url)
-    .sort((a, b) => {
-      const ta = a.demo_generated_at ? new Date(a.demo_generated_at).getTime() : 0;
-      const tb = b.demo_generated_at ? new Date(b.demo_generated_at).getTime() : 0;
-      return tb - ta;
-    });
-
-  const isDisabled = disabled || exportable.length === 0;
-
-  const handleClick = () => {
-    if (isDisabled) return;
-
-    const rows = [
-      ["First Name", "Last Name", "Email", "Demo Site URL", "Demo Generated At"],
-      ...exportable.map((l) => [
+function ExportButton({ leads, selectedLeads }: { leads: Lead[]; selectedLeads: Lead[] }) {
+  const makeCSV = (rows: Lead[], filename: string) => {
+    const data = [
+      ["First Name", "Last Name", "Email", "Company", "Website URL", "Demo Site URL", "Demo Generated At"],
+      ...rows.map((l) => [
         l.first_name,
         l.last_name,
         l.email,
+        l.company_name ?? "",
+        l.company_website_url ?? "",
         l.demo_url ?? "",
         l.demo_generated_at ? l.demo_generated_at.slice(0, 10) : "",
       ]),
     ];
-
-    const csv = rows
+    const csv = data
       .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
       .join("\r\n");
-
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `demo-sites-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  // Primary: export selected leads from basket (global across searches)
+  if (selectedLeads.length > 0) {
+    return (
+      <button
+        onClick={() => makeCSV(selectedLeads, `selected-leads-${new Date().toISOString().slice(0, 10)}.csv`)}
+        title={`Export ${selectedLeads.length} selected lead${selectedLeads.length !== 1 ? "s" : ""}`}
+        style={{
+          padding: "5px 12px",
+          borderRadius: 6,
+          border: "1px solid rgba(74,222,128,0.4)",
+          background: "rgba(74,222,128,0.1)",
+          color: "#4ade80",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          transition: "all 150ms ease",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(74,222,128,0.18)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(74,222,128,0.1)"; }}
+      >
+        ↓ Export Selected ({selectedLeads.length})
+      </button>
+    );
+  }
+
+  // Fallback: export visible leads that have a demo URL
+  const exportable = leads.filter((l) => l.has_demo && l.demo_url);
+  const isDisabled = exportable.length === 0;
+
   return (
     <button
-      onClick={handleClick}
+      onClick={() => { if (!isDisabled) makeCSV(exportable, `demo-sites-${new Date().toISOString().slice(0, 10)}.csv`); }}
       disabled={isDisabled}
       title={isDisabled ? "No leads with demo sites in current view" : `Export ${exportable.length} lead${exportable.length !== 1 ? "s" : ""} with demo sites`}
       style={{
