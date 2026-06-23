@@ -50,7 +50,8 @@
       "Bash(git -C 'f:\\\\Video Recording' commit -m ' *)",
       "Bash(git -C \"f:\\\\Video Recording\" push)",
       "Bash(git -C \"f:\\\\Video Recording\" add backend/pipeline/html_generator.py)",
-      "Bash(git -C \"f:\\\\Video Recording\" diff --cached --stat)"
+      "Bash(git -C \"f:\\\\Video Recording\" diff --cached --stat)",
+      "Bash(git -C \"f:\\\\Video Recording\" add frontend/src/pages/LeadsPage.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Sofyan Abdullah\\.claude\\projects\\d--Video-Recording\\memory",
