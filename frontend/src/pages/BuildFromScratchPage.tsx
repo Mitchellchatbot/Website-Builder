@@ -102,6 +102,15 @@ export default function BuildFromScratchPage() {
     } catch { fetchBuilds(); }
   };
 
+  const handleRedeploy = async (build: SheetsEntry) => {
+    if (!build.latest_run) return;
+    updateBuildRun(build.id, { status: "deploying" });
+    try {
+      await api.deploySheetsEntry(build.latest_run.id);
+      fetchBuilds();
+    } catch { fetchBuilds(); }
+  };
+
   const handleDelete = async (build: SheetsEntry) => {
     if (!confirm(`Delete "${build.business_name ?? "this build"}"?`)) return;
     setBuilds((prev) => prev.filter((b) => b.id !== build.id));
@@ -224,6 +233,7 @@ export default function BuildFromScratchPage() {
                   onRetry={handleRetry}
                   onCancel={handleCancel}
                   onDelete={handleDelete}
+                  onRedeploy={handleRedeploy}
                 />
               ))}
             </div>
@@ -235,13 +245,14 @@ export default function BuildFromScratchPage() {
 }
 
 function BuildCard({
-  build, onDeploy, onRetry, onCancel, onDelete,
+  build, onDeploy, onRetry, onCancel, onDelete, onRedeploy,
 }: {
   build: SheetsEntry;
-  onDeploy: (b: SheetsEntry) => void;
-  onRetry:  (b: SheetsEntry) => void;
-  onCancel: (b: SheetsEntry) => void;
-  onDelete: (b: SheetsEntry) => void;
+  onDeploy:   (b: SheetsEntry) => void;
+  onRetry:    (b: SheetsEntry) => void;
+  onCancel:   (b: SheetsEntry) => void;
+  onDelete:   (b: SheetsEntry) => void;
+  onRedeploy: (b: SheetsEntry) => void;
 }) {
   const run    = build.latest_run;
   const status = run?.status ?? "pending";
@@ -328,13 +339,22 @@ function BuildCard({
           )}
 
           {status === "completed" && liveUrl && (
-            <a
-              href={liveUrl}
-              target="_blank" rel="noopener noreferrer"
-              style={actionLinkStyle("#4ade80", "rgba(74,222,128,0.12)", "rgba(74,222,128,0.3)")}
-            >
-              View Live ↗
-            </a>
+            <>
+              <a
+                href={liveUrl}
+                target="_blank" rel="noopener noreferrer"
+                style={actionLinkStyle("#4ade80", "rgba(74,222,128,0.12)", "rgba(74,222,128,0.3)")}
+              >
+                View Live ↗
+              </a>
+              <button
+                onClick={() => onRedeploy(build)}
+                title="Push the existing HTML to Netlify again"
+                style={actionBtnStyle("#a78bfa", "rgba(167,139,250,0.12)", "rgba(167,139,250,0.3)")}
+              >
+                ↑ Redeploy
+              </button>
+            </>
           )}
 
           {(status === "failed" || status === "cancelled") && run && (

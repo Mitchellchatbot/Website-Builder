@@ -462,7 +462,7 @@ def deploy_entry(entry_website_id: str, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=404, detail="Not found")
 
     ew = result.data[0]
-    if ew["status"] not in ("awaiting_approval", "cancelled"):
+    if ew["status"] not in ("awaiting_approval", "cancelled", "completed", "failed"):
         raise HTTPException(status_code=400, detail=f"Cannot deploy from status '{ew['status']}'")
 
     html_path = ew.get("generated_html_path")
