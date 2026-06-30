@@ -101,6 +101,18 @@ def get_or_create_site(company_name: str, token: str) -> dict:
 # Zip builder
 # ─────────────────────────────────────────────
 
+NETLIFY_HEADERS = """\
+/*.html
+  Content-Type: text/html; charset=utf-8
+
+/
+  Content-Type: text/html; charset=utf-8
+
+/images/*
+  Cache-Control: public, max-age=31536000, immutable
+"""
+
+
 def build_zip(lead_path: Path) -> bytes:
     index_html = lead_path / "index.html"
     images_dir = lead_path / "images"
@@ -115,7 +127,11 @@ def build_zip(lead_path: Path) -> bytes:
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("index.html", html)
+        # Write as explicit UTF-8 bytes — avoids any platform encoding ambiguity
+        zf.writestr("index.html", html.encode("utf-8"))
+        # _headers tells Netlify the correct Content-Type so the browser renders
+        # HTML instead of displaying raw source (happens without this on ZIP deploys)
+        zf.writestr("_headers", NETLIFY_HEADERS.encode("utf-8"))
         if images_dir.exists():
             for img in sorted(images_dir.iterdir()):
                 if img.is_file():
