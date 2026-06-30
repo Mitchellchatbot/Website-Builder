@@ -21,8 +21,9 @@ export default function BuildFromScratchPage() {
   const [name,        setName]        = useState("");
   const [description, setDescription] = useState("");
   const [designPrefs, setDesignPrefs] = useState("");
-  const [creating,    setCreating]    = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating,     setCreating]     = useState(false);
+  const [createError,  setCreateError]  = useState<string | null>(null);
+  const [actionError,  setActionError]  = useState<string | null>(null);
 
   const fetchBuilds = useCallback(async () => {
     try {
@@ -104,11 +105,15 @@ export default function BuildFromScratchPage() {
 
   const handleRedeploy = async (build: SheetsEntry) => {
     if (!build.latest_run) return;
+    setActionError(null);
     updateBuildRun(build.id, { status: "deploying" });
     try {
       await api.deploySheetsEntry(build.latest_run.id);
       fetchBuilds();
-    } catch { fetchBuilds(); }
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : "Redeploy failed");
+      fetchBuilds();
+    }
   };
 
   const handleDelete = async (build: SheetsEntry) => {
@@ -203,6 +208,19 @@ export default function BuildFromScratchPage() {
             </div>
           </form>
         </div>
+
+        {/* Action error banner */}
+        {actionError && (
+          <div style={{
+            background: "rgba(239,68,68,0.08)", border: "1px solid rgba(248,113,113,0.2)",
+            borderRadius: 10, padding: "10px 16px", marginBottom: 16,
+            color: "#f87171", fontSize: 13,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+          }}>
+            <span>⚠ {actionError}</span>
+            <button onClick={() => setActionError(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", opacity: 0.6, fontSize: 14 }}>✕</button>
+          </div>
+        )}
 
         {/* Builds list */}
         {loading ? (

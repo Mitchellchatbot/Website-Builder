@@ -454,6 +454,24 @@ def cancel_generation(entry_website_id: str):
     return {"cancelled": True}
 
 
+def _run_regenerate_and_deploy(entry_id: str, ew_id: str) -> None:
+    """Regenerate the HTML then immediately deploy — no awaiting_approval stop.
+    Used when the generated file is missing (ephemeral Railway filesystem)."""
+    try:
+        result = run_sheets_pipeline(entry_id, ew_id, resume_from="scrape")
+        if result.get("status") == "awaiting_approval":
+            run_sheets_pipeline(entry_id, ew_id, resume_from="deploy")
+    except Exception as exc:
+        logger.error("[sheets:%s] Regenerate+redeploy failed: %s", entry_id, exc)
+        try:
+            get_client().table("sheets_entry_websites").update({
+                "status": "failed",
+                "error": str(exc),
+            }).eq("id", ew_id).execute()
+        except Exception:
+            pass
+
+
 @router.post("/generate/{entry_website_id}/deploy")
 def deploy_entry(entry_website_id: str, background_tasks: BackgroundTasks):
     db     = get_client()
@@ -466,8 +484,14 @@ def deploy_entry(entry_website_id: str, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail=f"Cannot deploy from status '{ew['status']}'")
 
     html_path = ew.get("generated_html_path")
-    if not html_path or not Path(html_path).exists():
-        raise HTTPException(status_code=400, detail="HTML not found — regenerate first")
+    file_exists = bool(html_path and Path(html_path).exists())
+
+    if not file_exists:
+        # File is gone (Railway ephemeral filesystem wiped on redeploy).
+        # Regenerate the HTML from scratch then auto-deploy without stopping.
+        db.table("sheets_entry_websites").update({"status": "pending"}).eq("id", entry_website_id).execute()
+        background_tasks.add_task(_run_regenerate_and_deploy, ew["entry_id"], entry_website_id)
+        return {"status": "pending", "entry_website_id": entry_website_id}
 
     db.table("sheets_entry_websites").update({"status": "pending"}).eq("id", entry_website_id).execute()
     background_tasks.add_task(_run_batch_sheets, [(ew["entry_id"], entry_website_id)], "deploy")
