@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"f:\\\\Video Recording\" add backend/pipeline/netlify_deployer.py)",
+      "Bash(git -C 'f:\\\\Video Recording' commit -m ' *)",
+      "Bash(git -C \"f:\\\\Video Recording\" add backend/routes/sheets_builder.py frontend/src/pages/BuildFromScratchPage.tsx)",
+      "Bash(git -C \"f:\\\\Video Recording\" add backend/routes/sheets_builder.py)"
+    ]
+  }
+}

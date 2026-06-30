@@ -408,17 +408,32 @@ def preview_general_html(general_link_website_id: str):
     html_path = Path(html_path_str)
     html = html_path.read_text(encoding="utf-8")
 
-    def _inline(match: re.Match) -> str:
-        src = match.group(1)
+    def _read_image(src: str) -> tuple[str, str] | None:
         img_file = html_path.parent / src
-        if img_file.exists():
-            ext = img_file.suffix.lower().lstrip(".")
-            mime = _MIME_MAP.get(ext, "image/png")
-            data = base64.standard_b64encode(img_file.read_bytes()).decode()
+        if not img_file.exists():
+            return None
+        ext  = img_file.suffix.lower().lstrip(".")
+        mime = _MIME_MAP.get(ext, "image/png")
+        data = base64.standard_b64encode(img_file.read_bytes()).decode()
+        return mime, data
+
+    def _inline_src(match: re.Match) -> str:
+        result = _read_image(match.group(1))
+        if result:
+            mime, data = result
             return f'src="data:{mime};base64,{data}"'
         return match.group(0)
 
-    html = re.sub(r'src="(images/[^"]+)"', _inline, html)
+    def _inline_url(match: re.Match) -> str:
+        result = _read_image(match.group(1))
+        if result:
+            mime, data = result
+            return f'url("data:{mime};base64,{data}")'
+        return match.group(0)
+
+    html = re.sub(r'src="(images/[^"]+)"', _inline_src, html)
+    # Inline CSS background-image: url('images/...') — single/double/no quotes
+    html = re.sub(r"""url\(['\"]?(images/[^'\")\s]+)['\"]?\)""", _inline_url, html)
 
     return HTMLResponse(content=html)
 
