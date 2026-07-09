@@ -19,6 +19,7 @@ by import path.
 
 import os
 import json
+import shutil
 import time
 from pathlib import Path
 
@@ -28,6 +29,12 @@ from dotenv import load_dotenv
 from pipeline.html_generator import (
     ANIMATION_CSS,
     ANIMATION_JS,
+    CHAT_WIDGET,
+    EMILY_ASSET,
+    HERO_BG_1_ASSET,
+    HERO_BG_2_ASSET,
+    HERO_SLIDESHOW_CSS,
+    HERO_SLIDESHOW_JS,
     MAX_TOKENS,
     MODEL,
     load_images,
@@ -213,24 +220,39 @@ Required sections are required regardless.
    backdrop-blur, shadow-on-scroll.
 
 2. Hero — Split layout: LEFT = copy + CTAs, RIGHT = lead-capture form card.
-   - Background — the hero ALWAYS uses a background-image layered UNDER a brand
-     gradient overlay. The gradient is the overlay, NOT a replacement.
-     - Use the best scraped photo's relative path if available; otherwise still
-       emit images/hero-bg.jpg with a swap comment. Never ship a gradient-only hero.
-     - Keep the overlay TRANSLUCENT so the photo reads through: darkest stop ~0.84
-       on the text side, falling to ~0.40 on the form side. NEVER a near-opaque
-       (0.9+) flat overlay (that hides the image). Add text-shadow to hero h1/subhead.
-       Reference (convert brand primary to rgb for mid/late stops):
+   - **Background Slideshow** (REQUIRED — do NOT use a single background-image on the section):
+     From the available scraped images in `images/`, pick the two best wide/scenic photos for
+     full-bleed hero backgrounds. If only one image is suitable, repeat it for both slides.
+     If no good landscape/background photo exists among the scraped images, fall back to the
+     pre-supplied hero backgrounds: `images/hero-bg-1.png` (slide 1) and `images/hero-bg-2.png` (slide 2) —
+     these are ALWAYS present in the images/ folder and MUST be used instead of a plain CSS gradient.
+     Build the hero in this EXACT layer order:
+     ```html
+     <section class="hero" id="home">
+       <div class="hero-bg-slider">
+         <div class="hero-slide active" style="background-image:url('images/BEST_FILENAME_1')"></div>
+         <div class="hero-slide" style="background-image:url('images/BEST_FILENAME_2')"></div>
+       </div>
+       <div class="hero-overlay"></div>
+       <div class="site-container hero-content">
+         <div class="hero-left"> ...copy, CTAs, trust badges... </div>
+         <div class="hero-right"> ...lead-capture form card... </div>
+       </div>
+       <div class="hero-dots">
+         <button class="hero-dot active" aria-label="Slide 1"></button>
+         <button class="hero-dot" aria-label="Slide 2"></button>
+       </div>
+     </section>
+     ```
+     Add text-shadow to hero h1/subhead so text is readable over any background photo.
+     Hero text color must be #ffffff; form card stays near-white/light on dark hero background.
+     Reference (the overlay layer handles darkening — do NOT add a separate background-image
+     to the section element itself):
          #home {{
-           position:relative; min-height:92vh; display:flex; align-items:center;
-           overflow:hidden;
-           background-image:
-             linear-gradient(100deg, rgba(20,8,4,0.84) 0%,
-               rgba(R,G,B,0.62) 55%, rgba(R,G,B,0.40) 100%),
-             url('images/hero-bg.jpg');   /* swap for real photo when available */
-           background-size:cover; background-position:center; background-repeat:no-repeat;
+           position:relative; min-height:92vh; display:flex; align-items:center; overflow:hidden;
+           /* NO background-image — the .hero-bg-slider handles it */
          }}
-         .hero-h1, .hero-sub {{ text-shadow:0 2px 16px rgba(0,0,0,0.28); }}
+         .hero-h1, .hero-sub {{ color:#fff; text-shadow:0 2px 16px rgba(0,0,0,0.28); }}
    - NO foreground product/photo cutout on the right — that slot is the form card.
    - Left column (this DOM order + animation classes):
      - Eyebrow trust pill (years in business, since YYYY, locations, awards)
@@ -332,23 +354,37 @@ nav/section width and centered:
                       align-items:center; justify-content:space-between; gap:16px; }}
 Use the SAME max-width as the nav/section container.
 
-### Step 5 — Scroll Animations
+### Step 5 — Scroll Animations & Slideshow
 Include this CSS verbatim inside <style>:
 {ANIMATION_CSS}
+
+Include this slideshow CSS verbatim inside <style> (after the animation CSS):
+{HERO_SLIDESHOW_CSS}
+
 Include this JS verbatim before </body>:
 {ANIMATION_JS}
+
+Include this slideshow JS verbatim before </body> (after animation JS):
+{HERO_SLIDESHOW_JS}
+
 Apply animation classes generously: every section title gets section-label, every
 card gets fade-up, card grids get stagger-children on the wrapper, hero elements
 get hero-animate-N.
 
-### Step 6 — Self-Check Before Returning
+### Step 6 — Chat Widget (embed AFTER the animation script, before </body>)
+Embed this EXACT script verbatim — do NOT modify it:
+{CHAT_WIDGET}
+The widget reads `var(--primary)` at runtime so it matches the page brand color
+automatically. images/emily.png is pre-copied to the output folder — the widget
+references it via window.location.origin + '/images/emily.png'.
+The widget iframe is at z-index:9999 and bottom:0 — do NOT change these values.
+
+### Step 7 — Self-Check Before Returning
 - [ ] All 7 required sections present with the exact ids; nav links match.
 - [ ] Hero is a 2-column split: left copy + CTAs, right lead-capture form card.
 - [ ] Logo is a real <img> in nav AND footer (placeholder path if none scraped),
       never text-only and never an inline-SVG icon.
-- [ ] Hero has a background-image (real path or images/hero-bg.jpg) UNDER a
-      translucent overlay (darkest <= ~0.85, ~0.40 on the form side); hero text
-      has text-shadow.
+- [ ] Hero uses .hero-bg-slider with two .hero-slide divs (url('images/...')), .hero-overlay, .site-container.hero-content, and .hero-dots — in that layer order; hero text is white with text-shadow.
 - [ ] .section-header is a centered flex column (tag pill ABOVE heading, not inline).
 - [ ] Sticky CTA content is wrapped in a max-width inner container.
 - [ ] Every in-section photo is a real <img>/background with a relative path
@@ -363,7 +399,8 @@ get hero-animate-N.
 - [ ] Every section has a section-label and at least one animated element.
 - [ ] Mobile: clamp() font sizing, flex-wrap grids, hamburger/stacked nav at <768px.
 - [ ] Body has padding-bottom: 80px for the sticky CTA bar.
-- [ ] No chat widget, no third-party embeds — fully self-contained.
+- [ ] Slideshow CSS and JS embedded verbatim (HERO_SLIDESHOW_CSS in <style>, HERO_SLIDESHOW_JS before </body>).
+- [ ] Chat widget script embedded verbatim before </body> (after slideshow JS).
 
 Output ONLY the raw HTML — start with <!DOCTYPE html>, end with </html>.
 No markdown fences, no explanation before or after.
@@ -393,6 +430,10 @@ def generate_website(output_folder: "Path | str") -> Path:
     print(f"📁 Folder: {folder}")
 
     images_folder.mkdir(parents=True, exist_ok=True)
+
+    if EMILY_ASSET.exists():
+        shutil.copy2(EMILY_ASSET, images_folder / "emily.png")
+    # hero-bg-1/2 are NOT copied here — copied after generation only if needed.
 
     print("🖼  Loading images...")
     image_blocks = load_images(images_folder, data.get("images", []))
@@ -446,6 +487,13 @@ def generate_website(output_folder: "Path | str") -> Path:
         html  = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:]).strip()
 
     output_path.write_text(html, encoding="utf-8")
+
+    if "hero-bg-1.png" in html and HERO_BG_1_ASSET.exists():
+        shutil.copy2(HERO_BG_1_ASSET, images_folder / "hero-bg-1.png")
+        print("   📦 Copied fallback hero-bg-1.png")
+    if "hero-bg-2.png" in html and HERO_BG_2_ASSET.exists():
+        shutil.copy2(HERO_BG_2_ASSET, images_folder / "hero-bg-2.png")
+        print("   📦 Copied fallback hero-bg-2.png")
 
     cost = (input_tokens / 1_000_000 * 15) + (output_tokens / 1_000_000 * 75)
     print(f"\n✅ Website saved: {output_path}")

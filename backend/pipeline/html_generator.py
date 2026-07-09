@@ -295,13 +295,57 @@ window.addEventListener('scroll', () => {
 """
 
 
-EMILY_ASSET = Path(__file__).parent.parent / "assets" / "emily.png"
+EMILY_ASSET    = Path(__file__).parent.parent / "assets" / "emily.png"
+HERO_BG_1_ASSET = Path(__file__).parent.parent / "assets" / "ChatGPT Image Jul 8, 2026, 07_12_38 PM.png"
+HERO_BG_2_ASSET = Path(__file__).parent.parent / "assets" / "ChatGPT Image Jul 8, 2026, 07_23_37 PM.png"
+
+HERO_SLIDESHOW_CSS = """\
+/* ══ HERO BACKGROUND SLIDESHOW ══ */
+.hero { position:relative; min-height:100vh; display:flex; align-items:center; overflow:hidden; padding-top:80px; }
+.hero-bg-slider { position:absolute; inset:0; width:100%; height:100%; z-index:0; }
+.hero-slide { position:absolute; inset:0; width:100%; height:100%; background-size:cover; background-position:center center; background-repeat:no-repeat; opacity:0; transition:opacity 1.8s cubic-bezier(0.4,0,0.2,1); transform:scale(1.05); animation:none; }
+.hero-slide.active { opacity:1; animation:kenBurns 8s ease-in-out forwards; }
+.hero-slide.exiting { opacity:0; transition:opacity 1.8s cubic-bezier(0.4,0,0.2,1); }
+@keyframes kenBurns { 0%{transform:scale(1.05)} 100%{transform:scale(1.12)} }
+.hero-overlay { position:absolute; inset:0; z-index:1; background:linear-gradient(105deg,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.50) 50%,rgba(0,0,0,0.30) 100%); }
+.hero-content { position:relative; z-index:2; display:flex; align-items:center; gap:60px; padding:60px 0; }
+.hero-dots { position:absolute; bottom:28px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:3; }
+.hero-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.4); border:none; cursor:pointer; padding:0; transition:background 0.3s ease,transform 0.3s ease; }
+.hero-dot.active { background:#ffffff; transform:scale(1.3); }
+@media(max-width:768px){ .hero{min-height:100svh} .hero-content{padding:60px 0 80px;} }"""
+
+
+HERO_SLIDESHOW_JS = """\
+// ── Hero Background Slideshow ──
+(function(){
+  var slides=document.querySelectorAll('.hero-slide');
+  var dots=document.querySelectorAll('.hero-dot');
+  if(slides.length<2)return;
+  var current=0,timer;
+  function goTo(i){
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exiting');
+    if(dots[current])dots[current].classList.remove('active');
+    (function(p){setTimeout(function(){slides[p].classList.remove('exiting');},1800);})(current);
+    current=i;
+    slides[current].classList.add('active');
+    if(dots[current])dots[current].classList.add('active');
+  }
+  function next(){goTo((current+1)%slides.length);}
+  function start(){timer=setInterval(next,6000);}
+  dots.forEach(function(d,i){d.addEventListener('click',function(){if(i===current)return;goTo(i);clearInterval(timer);start();});});
+  var h=document.querySelector('.hero');
+  if(h){h.addEventListener('mouseenter',function(){clearInterval(timer);});h.addEventListener('mouseleave',start);}
+  start();
+})();"""
+
 
 CHAT_WIDGET = """
 <script>
   (function () {
     if (window.location.search.indexOf('scaledbot_preview=true') !== -1) return;
-    var params = "primaryColor=%232563EB&greeting=We+are+so+glad+that+you+are+here.+Let+us+know+how+we+can+help+you+today.&widgetIcon=message-circle&borderRadius=24&autoOpen=true&effectType=none&effectInterval=5&effectIntensity=medium";
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#2563EB';
+    var params = "primaryColor=" + encodeURIComponent(primary) + "&greeting=We+are+so+glad+that+you+are+here.+Let+us+know+how+we+can+help+you+today.&widgetIcon=message-circle&borderRadius=24&autoOpen=true&effectType=none&effectInterval=5&effectIntensity=medium";
     var parentUrl = encodeURIComponent(window.location.href);
     var src = 'https://care-assist.io/widget-embed/a1b2c3d4-0001-4000-8000-000000000001?' + params + '&parentUrl=' + parentUrl;
     var iframe = document.createElement('iframe');
@@ -464,7 +508,32 @@ all sections on every viewport width.
    - Inner content row MUST be wrapped in `<div class="site-container">` (see ALIGNMENT SYSTEM above)
 
 2. **Hero** — Split: left = headline + CTAs, right = form card
-   - Inner two-column grid MUST be wrapped in `<div class="site-container">` (see ALIGNMENT SYSTEM above)
+   - **Background Slideshow** (REQUIRED — replaces any single background-image on the section element):
+     From the available scraped images in `images/`, pick the two best wide/scenic photos to use as
+     full-bleed hero backgrounds. Prioritize landscape, facility exterior, or lifestyle shots.
+     If only one suitable image exists, repeat it for both slides.
+     If no good landscape/facility photo exists among the scraped images, fall back to the
+     pre-supplied hero backgrounds: `images/hero-bg-1.png` (slide 1) and `images/hero-bg-2.png` (slide 2) —
+     these are ALWAYS present in the images/ folder and MUST be used instead of a plain CSS gradient.
+     Build the hero section in this EXACT layer order (outer → inner):
+     ```html
+     <section class="hero" id="home">
+       <div class="hero-bg-slider">
+         <div class="hero-slide active" style="background-image:url('images/BEST_FILENAME_1')"></div>
+         <div class="hero-slide" style="background-image:url('images/BEST_FILENAME_2')"></div>
+       </div>
+       <div class="hero-overlay"></div>
+       <div class="site-container hero-content">
+         <div class="hero-left"> ...headline, CTAs, trust badges... </div>
+         <div class="hero-right"> ...form card... </div>
+       </div>
+       <div class="hero-dots">
+         <button class="hero-dot active" aria-label="Slide 1"></button>
+         <button class="hero-dot" aria-label="Slide 2"></button>
+       </div>
+     </section>
+     ```
+   - Inner two-column grid MUST be wrapped in `<div class="site-container hero-content">` (see ALIGNMENT SYSTEM above)
    - Playfair Display headline: empowering phrase + italic accent line
    - 2-3 sentence sub from `overall_summary`
    - Primary CTA = call button with {phone}
@@ -667,15 +736,21 @@ all sections on every viewport width.
 - No em dashes anywhere in copy or content — use commas, colons, or plain periods instead
 - No emojis anywhere in the page — use SVG icons or Unicode symbols (checkmarks, arrows) if needed
 
-### Step 5 — Scroll Animations (REQUIRED)
+### Step 5 — Scroll Animations & Slideshow (REQUIRED)
 
 Embed this EXACT CSS in your <style> block:
 {ANIMATION_CSS}
 
+Embed this EXACT slideshow CSS in your <style> block (after the animation CSS):
+{HERO_SLIDESHOW_CSS}
+
 Embed this EXACT JS before </body>:
 {ANIMATION_JS}
 
-Embed this EXACT chat widget before </body> (after the animation script):
+Embed this EXACT slideshow JS before </body> (after the animation script):
+{HERO_SLIDESHOW_JS}
+
+Embed this EXACT chat widget before </body> (after the slideshow script):
 {CHAT_WIDGET}
 
 The chat widget uses `var(--primary)` and `var(--accent)` — these must match the CSS variables you define in your design system so the widget is brand-matched automatically.
@@ -736,7 +811,8 @@ Animation class guide:
 - [ ] Nav logo image and company name text are flex-aligned with gap: 8px, no large gap between them
 - [ ] `.site-container` CSS class defined with `max-width: 1200px; margin: 0 auto; padding: 0 40px; box-sizing: border-box`
 - [ ] Nav inner content row wrapped in `<div class="site-container">` — aligns with hero and all sections
-- [ ] Hero inner two-column grid wrapped in `<div class="site-container">` — same edges as nav
+- [ ] Hero uses .hero-bg-slider with two .hero-slide divs (background-image: url('images/...')), .hero-overlay, .site-container.hero-content, and .hero-dots — in that layer order
+- [ ] Hero inner two-column grid wrapped in `<div class="site-container hero-content">` — same edges as nav
 - [ ] Sticky bar inner content row wrapped in `<div class="site-container">` — text and button align to same edges as nav
 - [ ] Every section's inner content wrapped in `<div class="site-container">` — no section uses its own conflicting max-width
 - [ ] No em dashes anywhere in the page copy
@@ -787,6 +863,8 @@ def generate_website(lead_folder: str | Path) -> Path:
     images_folder.mkdir(parents=True, exist_ok=True)
     if EMILY_ASSET.exists():
         shutil.copy2(EMILY_ASSET, images_folder / "emily.png")
+    # hero-bg-1/2 are NOT copied here — they must be invisible to load_images so Claude
+    # always prefers real scraped photos. They are copied after generation only if needed.
 
     print("🖼  Loading images...")
     image_blocks = load_images(images_folder, data.get("images", []))
@@ -851,6 +929,16 @@ def generate_website(lead_folder: str | Path) -> Path:
         html  = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:]).strip()
 
     output_path.write_text(html, encoding="utf-8")
+
+    # Copy fallback hero backgrounds only if Claude actually used those placeholder names.
+    # Doing this AFTER generation means load_images never saw them, so Claude always
+    # preferred real scraped photos when available.
+    if "hero-bg-1.png" in html and HERO_BG_1_ASSET.exists():
+        shutil.copy2(HERO_BG_1_ASSET, images_folder / "hero-bg-1.png")
+        print("   📦 Copied fallback hero-bg-1.png")
+    if "hero-bg-2.png" in html and HERO_BG_2_ASSET.exists():
+        shutil.copy2(HERO_BG_2_ASSET, images_folder / "hero-bg-2.png")
+        print("   📦 Copied fallback hero-bg-2.png")
 
     cost = (input_tokens / 1_000_000 * 15) + (output_tokens / 1_000_000 * 75)
     print(f"\n✅ Website saved: {output_path}")
