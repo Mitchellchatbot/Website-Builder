@@ -428,7 +428,7 @@ def preview_general_html(general_link_website_id: str):
         result = _read_image(match.group(1))
         if result:
             mime, data = result
-            return f'url("data:{mime};base64,{data}")'
+            return f"url('data:{mime};base64,{data}')"
         return match.group(0)
 
     html = re.sub(r'src="(images/[^"]+)"', _inline_src, html)
